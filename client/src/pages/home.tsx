@@ -36,6 +36,8 @@ export default function Home() {
   const [selectedRedmineIssues, setSelectedRedmineIssues] = useState<number[]>([]);
   const [selectedMantisIssues, setSelectedMantisIssues] = useState<number[]>([]);
   const [activeDetailSection, setActiveDetailSection] = useState<'fix' | 'rca' | 'svn' | null>(null);
+  const [showNoMatches, setShowNoMatches] = useState(false);
+  const [showRCAContent, setShowRCAContent] = useState(false);
 
   // Dummy similar issues data
   const mockRedmineIssues: SimilarIssue[] = [
@@ -96,11 +98,23 @@ export default function Home() {
   };
 
   const handleFetchSimilarIssues = () => {
-    setShowSimilar(true);
-    setSimilarIssues([...mockRedmineIssues, ...mockMantisIssues]);
+    // Check for special case: no matches scenario
+    if (parseInt(issueId) === 99999) {
+      setShowNoMatches(true);
+      setShowSimilar(false);
+      setShowRCAContent(false);
+    } else {
+      setShowSimilar(true);
+      setShowNoMatches(false);
+      setSimilarIssues([...mockRedmineIssues, ...mockMantisIssues]);
+    }
     setSelectedRedmineIssues([]);
     setSelectedMantisIssues([]);
     setActiveDetailSection(null);
+  };
+
+  const handleFindRCA = () => {
+    setShowRCAContent(true);
   };
 
   const handleRedmineIssueSelection = (issueId: number, checked: boolean) => {
@@ -187,23 +201,31 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Enhanced Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Redmine Issue Tracker</h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Enter an issue ID to fetch details and discover similar issues in your project
+          <h1 className="text-5xl font-bold text-gray-900 mb-6 flex items-center justify-center gap-3">
+            <span className="text-4xl">🔧</span>
+            Redmine & Mantis Issue Tracker
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            Enter an issue ID to fetch details and discover similar issues across your project management systems
           </p>
         </div>
 
-        {/* Search Form */}
-        <Card className="p-8 mb-8">
+        {/* Enhanced Search Form */}
+        <Card className="p-8 mb-8 shadow-lg border-2 border-blue-100 bg-white">
           <CardContent className="p-0">
             <div className="space-y-6">
+              <div className="text-center">
+                <h2 className="text-lg font-semibold text-gray-800 bg-blue-50 px-4 py-2 rounded-lg inline-block mb-4">
+                  Issue Lookup
+                </h2>
+              </div>
               <div>
                 <Label htmlFor="issueId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Issue ID
+                  Issue ID (Try 99999 for no matches scenario)
                 </Label>
                 <div className="flex space-x-4">
                   <div className="flex-1">
@@ -213,9 +235,9 @@ export default function Home() {
                       value={issueId}
                       onChange={(e) => setIssueId(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Enter issue ID (e.g., 1234)"
+                      placeholder="Enter issue ID (e.g., 1234 or 99999)"
                       disabled={isLoading}
-                      className="w-full px-4 py-3"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-400"
                     />
                     {error && (
                       <p className="mt-2 text-sm text-red-500 flex items-center" data-testid="text-error">
@@ -228,7 +250,7 @@ export default function Home() {
                     data-testid="button-fetch-issue"
                     onClick={handleFetchIssue}
                     disabled={isLoading}
-                    className="px-8 py-3 bg-blue-600 hover:bg-blue-700"
+                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                   >
                     {isLoading ? (
                       <>
@@ -245,13 +267,18 @@ export default function Home() {
           </CardContent>
         </Card>
 
-        {/* Issue Details */}
+        {/* Enhanced Issue Details */}
         {issueDetails && (
-          <Card className="p-8 mb-8" data-testid="card-issue-details">
+          <Card className="p-8 mb-8 shadow-lg border-2 border-green-100 bg-white" data-testid="card-issue-details">
             <CardContent className="p-0">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 px-6 py-3 rounded-lg inline-block">
+                  Issue Details
+                </h2>
+              </div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-gray-900">Issue Details</h2>
-                <Badge variant={getStatusBadgeVariant(issueDetails.status)} data-testid="badge-status">
+                <div></div>
+                <Badge variant={getStatusBadgeVariant(issueDetails.status)} data-testid="badge-status" className="text-lg px-4 py-2">
                   {issueDetails.status}
                 </Badge>
               </div>
@@ -305,8 +332,7 @@ export default function Home() {
                 <Button
                   data-testid="button-fetch-similar"
                   onClick={handleFetchSimilarIssues}
-                  variant="secondary"
-                  className="px-6 py-3"
+                  className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
                 >
                   <Search className="w-5 h-5 mr-2" />
                   Fetch Similar Issues
@@ -316,14 +342,64 @@ export default function Home() {
           </Card>
         )}
 
-        {/* Similar Issues List - Two Sections Side by Side */}
+        {/* No Matches Scenario */}
+        {showNoMatches && (
+          <Card className="p-8 mb-8 shadow-lg border-2 border-orange-200 bg-orange-50" data-testid="card-no-matches">
+            <CardContent className="p-0">
+              <div className="text-center">
+                <h2 className="text-2xl font-semibold text-white bg-gradient-to-r from-orange-600 to-red-600 px-6 py-3 rounded-lg inline-block mb-6">
+                  No Matches Found
+                </h2>
+                <div className="text-6xl mb-4">❌</div>
+                <p className="text-xl text-gray-700 mb-6 font-medium">
+                  No Matches Found. Kindly find RCA
+                </p>
+                <Button
+                  data-testid="button-find-rca"
+                  onClick={handleFindRCA}
+                  className="px-8 py-3 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-lg"
+                >
+                  <span className="mr-2">🔍</span>
+                  Find RCA
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* RCA Content */}
+        {showRCAContent && (
+          <Card className="p-8 mb-8 shadow-lg border-2 border-yellow-200 bg-yellow-50" data-testid="card-rca-content">
+            <CardContent className="p-0">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold text-white bg-gradient-to-r from-yellow-600 to-yellow-700 px-6 py-3 rounded-lg inline-block">
+                  Suggested RCA
+                </h3>
+              </div>
+              <div className="bg-white border-2 border-yellow-300 rounded-lg p-6 shadow-inner">
+                <p className="text-gray-800 leading-relaxed text-lg">
+                  <strong>Suggested RCA:</strong><br/>
+                  Login issue caused by an outdated session token validation library.<br/>
+                  Issue is reproducible only on legacy builds.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Enhanced Similar Issues List - Two Sections Side by Side */}
         {showSimilar && similarIssues.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8" data-testid="container-similar-issues">
-            {/* Redmine Similar Issues */}
-            <Card className="p-6" data-testid="card-redmine-issues">
+            {/* Enhanced Redmine Similar Issues */}
+            <Card className="p-6 shadow-lg border-2 border-red-100 bg-gradient-to-b from-red-50 to-white" data-testid="card-redmine-issues">
               <CardContent className="p-0">
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 px-4 py-3 rounded-lg inline-block">
+                    Redmine Similar Issues
+                  </h2>
+                </div>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Redmine Similar Issues</h2>
+                  <div></div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="select-all-redmine"
@@ -385,11 +461,16 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            {/* Mantis Similar Issues */}
-            <Card className="p-6" data-testid="card-mantis-issues">
+            {/* Enhanced Mantis Similar Issues */}
+            <Card className="p-6 shadow-lg border-2 border-green-100 bg-gradient-to-b from-green-50 to-white" data-testid="card-mantis-issues">
               <CardContent className="p-0">
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 px-4 py-3 rounded-lg inline-block">
+                    Mantis Similar Issues
+                  </h2>
+                </div>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-semibold text-gray-900">Mantis Similar Issues</h2>
+                  <div></div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="select-all-mantis"
@@ -453,12 +534,17 @@ export default function Home() {
           </div>
         )}
 
-        {/* Detail Action Buttons */}
+        {/* Enhanced Detail Action Buttons */}
         {showSimilar && totalSelectedIssues > 0 && (
-          <Card className="p-6 mt-6" data-testid="card-detail-actions">
+          <Card className="p-8 mt-8 shadow-lg border-2 border-purple-100 bg-gradient-to-r from-purple-50 to-indigo-50" data-testid="card-detail-actions">
             <CardContent className="p-0">
-              <div className="flex items-center justify-between mb-4">
-                <div>
+              <div className="text-center mb-6">
+                <h2 className="text-lg font-semibold text-white bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-3 rounded-lg inline-block">
+                  Issue Analysis Tools
+                </h2>
+              </div>
+              <div className="flex items-center justify-between mb-6">
+                <div className="bg-white rounded-lg px-4 py-2 border-2 border-purple-200">
                   <p className="text-sm font-medium text-gray-900" data-testid="text-total-selected">
                     Total Selected: {totalSelectedIssues} issues
                   </p>
@@ -466,67 +552,93 @@ export default function Home() {
                     Redmine: {selectedRedmineIssues.length} | Mantis: {selectedMantisIssues.length}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" data-testid="button-clear-all-selections" onClick={() => {
-                  setSelectedRedmineIssues([]);
-                  setSelectedMantisIssues([]);
-                  setActiveDetailSection(null);
-                }}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  data-testid="button-clear-all-selections" 
+                  className="border-2 border-red-300 text-red-700 hover:bg-red-50"
+                  onClick={() => {
+                    setSelectedRedmineIssues([]);
+                    setSelectedMantisIssues([]);
+                    setActiveDetailSection(null);
+                  }}
+                >
                   Clear All
                 </Button>
               </div>
               
-              <div className="flex space-x-3">
+              <div className="flex flex-wrap justify-center gap-4">
                 <Button 
                   variant={activeDetailSection === 'fix' ? 'default' : 'outline'}
-                  size="sm" 
+                  size="lg" 
                   data-testid="button-fix-details"
+                  className={`px-8 py-3 rounded-lg shadow-md transition-all duration-200 ${
+                    activeDetailSection === 'fix' 
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white' 
+                      : 'border-2 border-blue-300 text-blue-700 hover:bg-blue-50'
+                  }`}
                   onClick={() => handleDetailButtonClick('fix')}
                 >
-                  Fix Details
+                  🔧 Fix Details
                 </Button>
                 <Button 
                   variant={activeDetailSection === 'rca' ? 'default' : 'outline'}
-                  size="sm" 
+                  size="lg" 
                   data-testid="button-rca-details"
+                  className={`px-8 py-3 rounded-lg shadow-md transition-all duration-200 ${
+                    activeDetailSection === 'rca' 
+                      ? 'bg-gradient-to-r from-green-600 to-green-700 text-white' 
+                      : 'border-2 border-green-300 text-green-700 hover:bg-green-50'
+                  }`}
                   onClick={() => handleDetailButtonClick('rca')}
                 >
-                  RCA Details
+                  🔍 RCA Details
                 </Button>
                 <Button 
                   variant={activeDetailSection === 'svn' ? 'default' : 'outline'}
-                  size="sm" 
+                  size="lg" 
                   data-testid="button-svn-details"
+                  className={`px-8 py-3 rounded-lg shadow-md transition-all duration-200 ${
+                    activeDetailSection === 'svn' 
+                      ? 'bg-gradient-to-r from-orange-600 to-orange-700 text-white' 
+                      : 'border-2 border-orange-300 text-orange-700 hover:bg-orange-50'
+                  }`}
                   onClick={() => handleDetailButtonClick('svn')}
                 >
-                  SVN Details
+                  📋 SVN Details
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Detail Content Sections */}
+        {/* Enhanced Detail Content Sections */}
         {showSimilar && totalSelectedIssues > 0 && activeDetailSection && (
-          <Card className="p-6 mt-4" data-testid={`card-${activeDetailSection}-content`}>
+          <Card className="p-8 mt-6 shadow-lg border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50" data-testid={`card-${activeDetailSection}-content`}>
             <CardContent className="p-0">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900" data-testid={`title-${activeDetailSection}-details`}>
-                  {activeDetailSection === 'fix' && 'Fix Details'}
-                  {activeDetailSection === 'rca' && 'RCA Details'}
-                  {activeDetailSection === 'svn' && 'SVN Details'}
+              <div className="flex items-center justify-between mb-6">
+                <h3 className={`text-xl font-semibold text-white px-6 py-3 rounded-lg inline-block ${
+                  activeDetailSection === 'fix' ? 'bg-gradient-to-r from-blue-600 to-blue-700' :
+                  activeDetailSection === 'rca' ? 'bg-gradient-to-r from-green-600 to-green-700' :
+                  'bg-gradient-to-r from-orange-600 to-orange-700'
+                }`} data-testid={`title-${activeDetailSection}-details`}>
+                  {activeDetailSection === 'fix' && '🔧 Fix Details'}
+                  {activeDetailSection === 'rca' && '🔍 RCA Details'}
+                  {activeDetailSection === 'svn' && '📋 SVN Details'}
                 </h3>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   data-testid={`button-close-${activeDetailSection}`}
+                  className="text-red-600 hover:bg-red-50 border-2 border-red-200 px-3 py-2"
                   onClick={() => setActiveDetailSection(null)}
                 >
-                  ✕
+                  ✕ Close
                 </Button>
               </div>
               
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <p className="text-gray-800 leading-relaxed" data-testid={`text-${activeDetailSection}-content`}>
+              <div className="bg-white border-2 border-gray-200 rounded-xl p-6 shadow-inner">
+                <p className="text-gray-800 leading-relaxed text-lg font-medium" data-testid={`text-${activeDetailSection}-content`}>
                   {getDetailContent(activeDetailSection)}
                 </p>
               </div>

@@ -1,0 +1,67 @@
+Enhance my existing React app in Replit (using HTML, CSS, JS template with esm.sh CDN) with the following features and UI improvements:
+
+---
+
+🔹 FUNCTIONAL ENHANCEMENTS:
+
+1. **No Similar Issues Scenario**:
+   - Simulate a scenario where if the entered Redmine ID is `99999`, then:
+     - Do NOT show the "Redmine Similar Issues" or "Mantis Similar Issues" sections
+     - Instead, display this centered message:
+       ```
+       ❌ No Matches Found. Kindly find RCA
+       ```
+     - Below that message, show a button labeled:
+       ```
+       🔍 Find RCA
+       ```
+
+2. **Find RCA Button Functionality**:
+   - When the user clicks the **"Find RCA"** button, show the following hardcoded RCA content in a styled box:
+     ```
+     Suggested RCA:
+     Login issue caused by an outdated session token validation library.
+     Issue is reproducible only on legacy builds.
+     ```
+
+---
+
+🔹 UI/UX ENHANCEMENTS:
+
+3. Apply the following design improvements to the entire app:
+
+   - Add a **page title**:  
+     `🔧 Redmine & Mantis Issue Tracker`
+     with large font and spacing
+
+   - Add **section titles** (like "Issue Details", "Redmine Similar Issues", etc.) with background color and padding
+
+   - Show **Redmine and Mantis Similar Issues** side by side using **flex layout** when visible
+
+   - Wrap each section (including fetched issues and details) in **clean bordered boxes** with:
+     - Padding
+     - Light-gray background
+     - Rounded corners
+     - Margin between sections
+
+   - Style buttons to be more user-friendly:
+     - Add padding
+     - Use hover effects (change background color)
+     - Rounded corners
+
+   - Ensure the **Fix Details**, **RCA Details**, and **SVN Details** buttons:
+     - Only appear if at least one similar issue is selected
+     - Clicking each shows hardcoded text in a styled box
+
+4. Maintain full responsiveness — ensure the layout works on mobile (vertical stack) and desktop (side-by-side).
+
+---
+
+🛠 TECH INSTRUCTIONS:
+
+- Keep all logic in a single `index.jsx` file
+- Use only **React 18.2.0 from esm.sh CDN**
+- Render app into `<div id="root">` in `index.html`
+- Do **not** use any bundlers, Node.js, or npm
+- Everything must work in Replit's **static HTML/JS** template (client-only, no server)
+
