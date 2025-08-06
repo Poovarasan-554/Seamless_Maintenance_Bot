@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, Search, Loader2 } from "lucide-react";
 
 interface IssueDetails {
@@ -31,6 +32,7 @@ export default function Home() {
   const [issueDetails, setIssueDetails] = useState<IssueDetails | null>(null);
   const [similarIssues, setSimilarIssues] = useState<SimilarIssue[]>([]);
   const [showSimilar, setShowSimilar] = useState(false);
+  const [selectedIssues, setSelectedIssues] = useState<number[]>([]);
 
   // Dummy similar issues data
   const mockSimilarIssues: SimilarIssue[] = [
@@ -85,6 +87,23 @@ export default function Home() {
   const handleFetchSimilarIssues = () => {
     setShowSimilar(true);
     setSimilarIssues(mockSimilarIssues);
+    setSelectedIssues([]);
+  };
+
+  const handleIssueSelection = (issueId: number, checked: boolean) => {
+    if (checked) {
+      setSelectedIssues(prev => [...prev, issueId]);
+    } else {
+      setSelectedIssues(prev => prev.filter(id => id !== issueId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIssues(similarIssues.map(issue => issue.id));
+    } else {
+      setSelectedIssues([]);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -253,12 +272,37 @@ export default function Home() {
         {showSimilar && similarIssues.length > 0 && (
           <Card className="p-8" data-testid="card-similar-issues">
             <CardContent className="p-0">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-6">Similar Issues</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold text-gray-900">Similar Issues</h2>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="select-all"
+                      data-testid="checkbox-select-all"
+                      checked={selectedIssues.length === similarIssues.length && similarIssues.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                    <Label htmlFor="select-all" className="text-sm font-medium text-gray-700">
+                      Select All ({selectedIssues.length}/{similarIssues.length})
+                    </Label>
+                  </div>
+                </div>
+              </div>
               
               <div className="space-y-4">
                 {similarIssues.map((issue) => (
-                  <div key={issue.id} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors" data-testid={`card-similar-issue-${issue.id}`}>
-                    <div className="flex items-center justify-between">
+                  <div key={issue.id} className={`border rounded-lg p-4 transition-colors ${
+                    selectedIssues.includes(issue.id) 
+                      ? 'border-blue-300 bg-blue-50' 
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`} data-testid={`card-similar-issue-${issue.id}`}>
+                    <div className="flex items-center space-x-4">
+                      <Checkbox
+                        id={`issue-${issue.id}`}
+                        data-testid={`checkbox-issue-${issue.id}`}
+                        checked={selectedIssues.includes(issue.id)}
+                        onCheckedChange={(checked) => handleIssueSelection(issue.id, checked as boolean)}
+                      />
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900 mb-1" data-testid={`text-similar-title-${issue.id}`}>
                           #{issue.id}: {issue.title}
@@ -272,13 +316,28 @@ export default function Home() {
                           </Badge>
                         </div>
                       </div>
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                      </svg>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {selectedIssues.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-gray-600" data-testid="text-selected-count">
+                      {selectedIssues.length} issue{selectedIssues.length !== 1 ? 's' : ''} selected
+                    </p>
+                    <div className="flex space-x-2">
+                      <Button variant="outline" size="sm" data-testid="button-clear-selection" onClick={() => setSelectedIssues([])}>
+                        Clear Selection
+                      </Button>
+                      <Button size="sm" data-testid="button-perform-action">
+                        Perform Action
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
