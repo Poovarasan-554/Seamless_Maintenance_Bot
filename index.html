@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔧 Redmine & Mantis Issue Tracker</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #e3f2fd 0%, #e8eaf6 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .main-title {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #1a1a1a;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .subtitle {
+      font-size: 1.25rem;
+      color: #666;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      border: 2px solid rgba(59, 130, 246, 0.1);
+    }
+
+    .section-title {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 24px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .input-field {
+      flex: 1;
+      padding: 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .btn {
+      padding: 16px 32px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    }
+
+    .btn-outline {
+      background: white;
+      border: 2px solid #3b82f6;
+      color: #3b82f6;
+    }
+
+    .error {
+      color: #ef4444;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .issue-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+      margin-top: 32px;
+    }
+
+    @media (max-width: 768px) {
+      .issue-grid {
+        grid-template-columns: 1fr;
+      }
+      .input-group {
+        flex-direction: column;
+      }
+      .main-title {
+        font-size: 2rem;
+      }
+    }
+
+    .issue-section {
+      background: linear-gradient(135deg, #fef3c7, #fbbf24);
+      border: 2px solid #f59e0b;
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .redmine-section {
+      background: linear-gradient(135deg, #fee2e2, #f87171);
+      border: 2px solid #ef4444;
+    }
+
+    .mantis-section {
+      background: linear-gradient(135deg, #d1fae5, #34d399);
+      border: 2px solid #10b981;
+    }
+
+    .issue-item {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: all 0.2s;
+    }
+
+    .issue-item:hover {
+      border-color: #3b82f6;
+    }
+
+    .issue-item.selected {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+
+    .checkbox {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+    }
+
+    .issue-content {
+      flex: 1;
+    }
+
+    .issue-title {
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .badge-open {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .badge-progress {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .badge-resolved {
+      background: #d1fae5;
+      color: #059669;
+    }
+
+    .detail-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin: 32px 0;
+      flex-wrap: wrap;
+    }
+
+    .detail-content {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 24px;
+    }
+
+    .no-matches {
+      text-align: center;
+      background: linear-gradient(135deg, #fed7d7, #feb2b2);
+      border: 2px solid #f56565;
+      color: #742a2a;
+    }
+
+    .large-emoji {
+      font-size: 4rem;
+      margin: 16px 0;
+    }
+
+    .rca-content {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      border: 2px solid #f59e0b;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
