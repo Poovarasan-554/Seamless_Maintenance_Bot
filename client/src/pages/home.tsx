@@ -35,6 +35,7 @@ export default function Home() {
   const [showSimilar, setShowSimilar] = useState(false);
   const [selectedRedmineIssues, setSelectedRedmineIssues] = useState<number[]>([]);
   const [selectedMantisIssues, setSelectedMantisIssues] = useState<number[]>([]);
+  const [activeDetailSection, setActiveDetailSection] = useState<'fix' | 'rca' | 'svn' | null>(null);
 
   // Dummy similar issues data
   const mockRedmineIssues: SimilarIssue[] = [
@@ -99,6 +100,7 @@ export default function Home() {
     setSimilarIssues([...mockRedmineIssues, ...mockMantisIssues]);
     setSelectedRedmineIssues([]);
     setSelectedMantisIssues([]);
+    setActiveDetailSection(null);
   };
 
   const handleRedmineIssueSelection = (issueId: number, checked: boolean) => {
@@ -132,6 +134,25 @@ export default function Home() {
       setSelectedMantisIssues([]);
     }
   };
+
+  const handleDetailButtonClick = (detailType: 'fix' | 'rca' | 'svn') => {
+    setActiveDetailSection(activeDetailSection === detailType ? null : detailType);
+  };
+
+  const getDetailContent = (detailType: 'fix' | 'rca' | 'svn') => {
+    switch (detailType) {
+      case 'fix':
+        return "The login issue was fixed by updating the session handler and authentication checks.";
+      case 'rca':
+        return "Root cause: Missing null check in the login response handler. Impacted legacy login module.";
+      case 'svn':
+        return "SVN Commit: r1123 by dev_user on 2024-07-20 – Fixed login failure in auth-service.js";
+      default:
+        return "";
+    }
+  };
+
+  const totalSelectedIssues = selectedRedmineIssues.length + selectedMantisIssues.length;
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -432,30 +453,82 @@ export default function Home() {
           </div>
         )}
 
-        {/* Combined Action Section */}
-        {showSimilar && (selectedRedmineIssues.length > 0 || selectedMantisIssues.length > 0) && (
-          <Card className="p-6 mt-6" data-testid="card-combined-actions">
+        {/* Detail Action Buttons */}
+        {showSimilar && totalSelectedIssues > 0 && (
+          <Card className="p-6 mt-6" data-testid="card-detail-actions">
             <CardContent className="p-0">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-sm font-medium text-gray-900" data-testid="text-total-selected">
-                    Total Selected: {selectedRedmineIssues.length + selectedMantisIssues.length} issues
+                    Total Selected: {totalSelectedIssues} issues
                   </p>
                   <p className="text-xs text-gray-600">
                     Redmine: {selectedRedmineIssues.length} | Mantis: {selectedMantisIssues.length}
                   </p>
                 </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" data-testid="button-clear-all-selections" onClick={() => {
-                    setSelectedRedmineIssues([]);
-                    setSelectedMantisIssues([]);
-                  }}>
-                    Clear All
-                  </Button>
-                  <Button size="sm" data-testid="button-perform-combined-action">
-                    Perform Action on Selected
-                  </Button>
-                </div>
+                <Button variant="outline" size="sm" data-testid="button-clear-all-selections" onClick={() => {
+                  setSelectedRedmineIssues([]);
+                  setSelectedMantisIssues([]);
+                  setActiveDetailSection(null);
+                }}>
+                  Clear All
+                </Button>
+              </div>
+              
+              <div className="flex space-x-3">
+                <Button 
+                  variant={activeDetailSection === 'fix' ? 'default' : 'outline'}
+                  size="sm" 
+                  data-testid="button-fix-details"
+                  onClick={() => handleDetailButtonClick('fix')}
+                >
+                  Fix Details
+                </Button>
+                <Button 
+                  variant={activeDetailSection === 'rca' ? 'default' : 'outline'}
+                  size="sm" 
+                  data-testid="button-rca-details"
+                  onClick={() => handleDetailButtonClick('rca')}
+                >
+                  RCA Details
+                </Button>
+                <Button 
+                  variant={activeDetailSection === 'svn' ? 'default' : 'outline'}
+                  size="sm" 
+                  data-testid="button-svn-details"
+                  onClick={() => handleDetailButtonClick('svn')}
+                >
+                  SVN Details
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Detail Content Sections */}
+        {showSimilar && totalSelectedIssues > 0 && activeDetailSection && (
+          <Card className="p-6 mt-4" data-testid={`card-${activeDetailSection}-content`}>
+            <CardContent className="p-0">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900" data-testid={`title-${activeDetailSection}-details`}>
+                  {activeDetailSection === 'fix' && 'Fix Details'}
+                  {activeDetailSection === 'rca' && 'RCA Details'}
+                  {activeDetailSection === 'svn' && 'SVN Details'}
+                </h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  data-testid={`button-close-${activeDetailSection}`}
+                  onClick={() => setActiveDetailSection(null)}
+                >
+                  ✕
+                </Button>
+              </div>
+              
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <p className="text-gray-800 leading-relaxed" data-testid={`text-${activeDetailSection}-content`}>
+                  {getDetailContent(activeDetailSection)}
+                </p>
               </div>
             </CardContent>
           </Card>
