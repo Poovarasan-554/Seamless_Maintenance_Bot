@@ -1,6 +1,11 @@
 import React, { useState } from 'https://esm.sh/react@18.2.0';
 import ReactDOM from 'https://esm.sh/react-dom@18.2.0';
 
+// Configuration - Set to true to use real API calls
+const USE_REAL_API = false;
+const API_BASE_URL = 'https://your-redmine-instance.com/api'; // Replace with your actual API URL
+const API_KEY = 'your-api-key-here'; // Replace with your actual API key
+
 // Mock data
 const mockRedmineIssues = [
   { id: 101, title: 'Login fails', status: 'Open', priority: 'High', source: 'redmine' },
@@ -35,7 +40,74 @@ function App() {
     return !isNaN(numericId) && numericId > 0 && id.toString() === numericId.toString();
   };
 
-  const handleFetchIssue = () => {
+  // API call function for fetching real issue data
+  const fetchIssueFromAPI = async (issueId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/issues/${issueId}.json`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Redmine-API-Key': API_KEY,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Transform API response to our expected format
+      return {
+        id: data.issue.id,
+        title: data.issue.subject,
+        description: data.issue.description || 'No description available',
+        status: data.issue.status.name,
+        priority: data.issue.priority.name,
+        assignee: data.issue.assigned_to ? data.issue.assigned_to.name : 'Unassigned',
+        created: data.issue.created_on,
+        updated: data.issue.updated_on
+      };
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  };
+
+  // API call function for fetching similar issues
+  const fetchSimilarIssuesFromAPI = async (keyword) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/issues.json?subject=~${encodeURIComponent(keyword)}&limit=10`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Redmine-API-Key': API_KEY,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Transform API response to our expected format
+      return data.issues.map(issue => ({
+        id: issue.id,
+        title: issue.subject,
+        status: issue.status.name,
+        priority: issue.priority.name,
+        source: 'redmine'
+      }));
+    } catch (error) {
+      console.error('Similar Issues API Error:', error);
+      throw error;
+    }
+  };
+
+  const handleFetchIssue = async () => {
     setError('');
     setIssueDetails(null);
     setShowSimilar(false);
@@ -55,35 +127,65 @@ function App() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const mockData = {
-        id: parseInt(issueId),
-        title: `Sample Issue #${issueId}: API Integration Problem`,
-        description: 'The REST API endpoints are returning inconsistent response formats, causing parsing errors in the frontend application. This affects user data synchronization and may lead to data loss.',
-        status: 'Open',
-        priority: 'High',
-        assignee: 'John Doe',
-        created: '2024-01-15 10:30:00',
-        updated: '2024-01-20 14:22:00'
-      };
-      
-      setIssueDetails(mockData);
+    try {
+      if (USE_REAL_API) {
+        // Real API call
+        const issueData = await fetchIssueFromAPI(issueId);
+        setIssueDetails(issueData);
+      } else {
+        // Mock data with simulated delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        const mockData = {
+          id: parseInt(issueId),
+          title: `Sample Issue #${issueId}: API Integration Problem`,
+          description: 'The REST API endpoints are returning inconsistent response formats, causing parsing errors in the frontend application. This affects user data synchronization and may lead to data loss.',
+          status: 'Open',
+          priority: 'High',
+          assignee: 'John Doe',
+          created: '2024-01-15 10:30:00',
+          updated: '2024-01-20 14:22:00'
+        };
+        setIssueDetails(mockData);
+      }
+    } catch (error) {
+      setError(`Failed to fetch issue: ${error.message}`);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
-  const handleFetchSimilarIssues = () => {
+  const handleFetchSimilarIssues = async () => {
+    setSelectedRedmineIssues([]);
+    setSelectedMantisIssues([]);
+    setActiveDetailSection(null);
+
     if (parseInt(issueId) === 99999) {
       setShowNoMatches(true);
       setShowSimilar(false);
       setShowRCAContent(false);
-    } else {
-      setShowSimilar(true);
-      setShowNoMatches(false);
+      return;
     }
-    setSelectedRedmineIssues([]);
-    setSelectedMantisIssues([]);
-    setActiveDetailSection(null);
+
+    if (USE_REAL_API && issueDetails) {
+      try {
+        // Extract keywords from the issue title for searching
+        const searchKeyword = issueDetails.title.split(':')[0].trim();
+        const similarIssues = await fetchSimilarIssuesFromAPI(searchKeyword);
+        
+        // Update mock data with real API results
+        if (similarIssues.length > 0) {
+          // Here you would update your state with real similar issues
+          // For now, we'll continue showing mock data but log the real results
+          console.log('Real similar issues found:', similarIssues);
+        }
+      } catch (error) {
+        console.error('Failed to fetch similar issues:', error);
+        setError('Failed to fetch similar issues from API');
+      }
+    }
+
+    setShowSimilar(true);
+    setShowNoMatches(false);
   };
 
   const handleFindRCA = () => {
@@ -163,7 +265,20 @@ function App() {
       ]),
       React.createElement('p', { key: 'subtitle', className: 'subtitle' }, 
         'Enter an issue ID to fetch details and discover similar issues across your project management systems'
-      )
+      ),
+      React.createElement('div', { 
+        key: 'api-status', 
+        style: { 
+          marginTop: '16px', 
+          padding: '8px 16px', 
+          borderRadius: '20px', 
+          display: 'inline-block',
+          backgroundColor: USE_REAL_API ? '#d1fae5' : '#fee2e2',
+          color: USE_REAL_API ? '#059669' : '#dc2626',
+          fontSize: '14px',
+          fontWeight: '600'
+        } 
+      }, USE_REAL_API ? '🟢 Real API Mode' : '🔴 Demo Mode (Mock Data)')
     ]),
 
     // Search Form
