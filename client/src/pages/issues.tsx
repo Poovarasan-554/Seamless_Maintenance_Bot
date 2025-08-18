@@ -3,10 +3,11 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { AlertCircle, Search, Loader2, LogOut } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AlertCircle, Search, Loader2, LogOut, User, Calendar, Clock, ArrowLeft, Eye, Code, GitBranch } from "lucide-react";
 
 interface IssueDetails {
   id: number;
@@ -25,6 +26,13 @@ interface SimilarIssue {
   status: string;
   priority: string;
   source: 'redmine' | 'mantis';
+  description?: string;
+  assignee?: string;
+  contactPerson?: string;
+  closedBy?: string;
+  created?: string;
+  updated?: string;
+  resolution?: string;
 }
 
 export default function Issues() {
@@ -38,24 +46,141 @@ export default function Issues() {
   const [selectedIssue, setSelectedIssue] = useState<string>('');
   const [showNoMatches, setShowNoMatches] = useState(false);
   const [showRCAContent, setShowRCAContent] = useState(false);
+  const [showDetailedView, setShowDetailedView] = useState(false);
+  const [accuracyScore, setAccuracyScore] = useState('');
+  const [selectedIssueDetails, setSelectedIssueDetails] = useState<SimilarIssue | null>(null);
 
   const username = localStorage.getItem("username") || "User";
 
-  // Dummy similar issues data
+  // Dummy similar issues data with enhanced details
   const mockRedmineIssues: SimilarIssue[] = [
-    { id: 101, title: 'Login fails', status: 'Open', priority: 'High', source: 'redmine' },
-    { id: 102, title: 'Session timeout too fast', status: 'In Progress', priority: 'Medium', source: 'redmine' },
-    { id: 103, title: 'Login button not working', status: 'Open', priority: 'High', source: 'redmine' },
-    { id: 104, title: 'Incorrect error on login', status: 'Open', priority: 'Medium', source: 'redmine' },
-    { id: 105, title: 'UI freeze on login', status: 'Resolved', priority: 'Low', source: 'redmine' }
+    { 
+      id: 101, 
+      title: 'Login fails', 
+      status: 'Open', 
+      priority: 'High', 
+      source: 'redmine',
+      description: 'Users are unable to login after entering correct credentials. The login form shows a generic error message.',
+      assignee: 'Sarah Johnson',
+      contactPerson: 'Mike Wilson',
+      created: '2024-01-10 09:15:00',
+      updated: '2024-01-18 14:30:00'
+    },
+    { 
+      id: 102, 
+      title: 'Session timeout too fast', 
+      status: 'In Progress', 
+      priority: 'Medium', 
+      source: 'redmine',
+      description: 'User sessions are expiring after only 5 minutes of inactivity instead of the expected 30 minutes.',
+      assignee: 'Alex Chen',
+      contactPerson: 'Jennifer Davis',
+      created: '2024-01-12 11:20:00',
+      updated: '2024-01-19 16:45:00'
+    },
+    { 
+      id: 103, 
+      title: 'Login button not working', 
+      status: 'Open', 
+      priority: 'High', 
+      source: 'redmine',
+      description: 'The login button becomes unresponsive on certain browsers after multiple failed attempts.',
+      assignee: 'David Rodriguez',
+      contactPerson: 'Lisa Thompson',
+      created: '2024-01-14 13:30:00',
+      updated: '2024-01-20 10:15:00'
+    },
+    { 
+      id: 104, 
+      title: 'Incorrect error on login', 
+      status: 'Open', 
+      priority: 'Medium', 
+      source: 'redmine',
+      description: 'Wrong error message displayed when user enters invalid credentials.',
+      assignee: 'Emma Taylor',
+      contactPerson: 'Robert Brown',
+      created: '2024-01-16 15:45:00',
+      updated: '2024-01-21 12:20:00'
+    },
+    { 
+      id: 105, 
+      title: 'UI freeze on login', 
+      status: 'Resolved', 
+      priority: 'Low', 
+      source: 'redmine',
+      description: 'Login interface occasionally freezes during authentication process on slower connections.',
+      assignee: 'Kevin White',
+      contactPerson: 'Amanda Green',
+      closedBy: 'John Miller',
+      created: '2024-01-08 08:00:00',
+      updated: '2024-01-22 17:30:00',
+      resolution: 'Fixed by optimizing authentication timeout settings'
+    }
   ];
 
   const mockMantisIssues: SimilarIssue[] = [
-    { id: 201, title: 'Login redirect broken', status: 'Open', priority: 'High', source: 'mantis' },
-    { id: 202, title: 'Cannot logout after login', status: 'In Progress', priority: 'Medium', source: 'mantis' },
-    { id: 203, title: 'Login test cases failing', status: 'Open', priority: 'High', source: 'mantis' },
-    { id: 204, title: 'Wrong credentials not handled', status: 'Open', priority: 'Medium', source: 'mantis' },
-    { id: 205, title: 'JS error on login screen', status: 'Resolved', priority: 'Low', source: 'mantis' }
+    { 
+      id: 201, 
+      title: 'Login redirect broken', 
+      status: 'Open', 
+      priority: 'High', 
+      source: 'mantis',
+      description: 'After successful login, users are redirected to a blank page instead of the dashboard.',
+      assignee: 'Rachel Kim',
+      contactPerson: 'Steven Lee',
+      created: '2024-01-11 10:30:00',
+      updated: '2024-01-19 09:15:00'
+    },
+    { 
+      id: 202, 
+      title: 'Cannot logout after login', 
+      status: 'In Progress', 
+      priority: 'Medium', 
+      source: 'mantis',
+      description: 'Logout functionality fails to clear session data properly, keeping users logged in.',
+      assignee: 'Thomas Anderson',
+      contactPerson: 'Maria Garcia',
+      created: '2024-01-13 14:20:00',
+      updated: '2024-01-20 11:40:00'
+    },
+    { 
+      id: 203, 
+      title: 'Login test cases failing', 
+      status: 'Open', 
+      priority: 'High', 
+      source: 'mantis',
+      description: 'Automated test suite for login functionality showing failures across multiple scenarios.',
+      assignee: 'Nicole Parker',
+      contactPerson: 'James Wilson',
+      created: '2024-01-15 16:10:00',
+      updated: '2024-01-21 13:25:00'
+    },
+    { 
+      id: 204, 
+      title: 'Wrong credentials not handled', 
+      status: 'Open', 
+      priority: 'Medium', 
+      source: 'mantis',
+      description: 'Application does not properly handle and display errors for incorrect login credentials.',
+      assignee: 'Daniel Martinez',
+      contactPerson: 'Susan Clark',
+      created: '2024-01-17 12:45:00',
+      updated: '2024-01-22 08:50:00'
+    },
+    { 
+      id: 205, 
+      title: 'JS error on login screen', 
+      status: 'Resolved', 
+      priority: 'Low', 
+      source: 'mantis',
+      description: 'JavaScript console errors appearing on login page causing minor UI glitches.',
+      assignee: 'Laura Young',
+      contactPerson: 'Mark Johnson',
+      closedBy: 'Catherine Smith',
+      created: '2024-01-09 07:30:00',
+      updated: '2024-01-23 15:20:00',
+      resolution: 'Fixed JavaScript syntax error in login validation script'
+    }
   ];
 
   const validateIssueId = (id: string): boolean => {
@@ -127,7 +252,37 @@ export default function Issues() {
   const handleContinue = () => {
     if (selectedIssue) {
       const issue = similarIssues.find(i => i.id.toString() === selectedIssue);
-      alert(`You selected: ${issue?.title} (${issue?.source.toUpperCase()} #${issue?.id})`);
+      if (issue) {
+        setSelectedIssueDetails(issue);
+        setShowDetailedView(true);
+        setAccuracyScore('');
+      }
+    }
+  };
+
+  const handleBackToSelection = () => {
+    setShowDetailedView(false);
+    setSelectedIssueDetails(null);
+    setAccuracyScore('');
+  };
+
+  const handleViewFixDetails = () => {
+    alert(`Viewing Fix Details for ${selectedIssueDetails?.source.toUpperCase()} Issue #${selectedIssueDetails?.id}\n\nFix Details:\n- Updated authentication middleware\n- Added proper error handling\n- Fixed session management\n- Deployed hotfix version 2.1.3`);
+  };
+
+  const handleViewRCADetails = () => {
+    alert(`Viewing RCA Details for ${selectedIssueDetails?.source.toUpperCase()} Issue #${selectedIssueDetails?.id}\n\nRoot Cause Analysis:\n- Issue caused by outdated session validation\n- Missing error handling in auth module\n- Race condition in login process\n- Affected users: 15% of daily active users`);
+  };
+
+  const handleViewSVNDetails = () => {
+    alert(`Viewing SVN Details for ${selectedIssueDetails?.source.toUpperCase()} Issue #${selectedIssueDetails?.id}\n\nSVN Information:\n- Commit: r4521\n- Author: ${selectedIssueDetails?.assignee}\n- Date: 2024-01-22 14:30:00\n- Files modified: auth.js, session.js, login.html\n- Branch: hotfix/login-fixes`);
+  };
+
+  const handleAccuracyScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numbers 1-10
+    if (value === '' || (/^[1-9]$/.test(value) || value === '10')) {
+      setAccuracyScore(value);
     }
   };
 
@@ -368,8 +523,183 @@ export default function Issues() {
           </Card>
         )}
 
+        {/* Detailed Issue View */}
+        {showDetailedView && selectedIssueDetails && (
+          <Card className="p-6 shadow-lg border-2 border-green-100 bg-white" data-testid="card-detailed-view">
+            <CardHeader className="p-0 mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={handleBackToSelection}
+                    variant="outline"
+                    size="sm"
+                    data-testid="button-back"
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Selection
+                  </Button>
+                  <Badge 
+                    variant="secondary" 
+                    className={`${selectedIssueDetails.source === 'redmine' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`}
+                  >
+                    {selectedIssueDetails.source.toUpperCase()}
+                  </Badge>
+                </div>
+                <Badge variant={getStatusBadgeVariant(selectedIssueDetails.status)} data-testid="badge-detailed-status">
+                  {selectedIssueDetails.status}
+                </Badge>
+              </div>
+              <CardTitle className="text-2xl mt-4" data-testid="text-detailed-title">
+                #{selectedIssueDetails.id}: {selectedIssueDetails.title}
+              </CardTitle>
+            </CardHeader>
+            
+            <CardContent className="p-0 space-y-6">
+              {/* Issue Description */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
+                <p className="text-gray-700 leading-relaxed" data-testid="text-detailed-description">
+                  {selectedIssueDetails.description}
+                </p>
+              </div>
+
+              {/* Issue Details Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-1">
+                      <User className="w-4 h-4" />
+                      Assignee
+                    </h4>
+                    <p className="text-gray-900" data-testid="text-detailed-assignee">
+                      {selectedIssueDetails.assignee}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-2">Priority</h4>
+                    <Badge variant={getPriorityBadgeVariant(selectedIssueDetails.priority)} data-testid="badge-detailed-priority">
+                      {selectedIssueDetails.priority}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-1">
+                      <User className="w-4 h-4" />
+                      Contact Person
+                      {selectedIssueDetails.status === 'Resolved' && selectedIssueDetails.closedBy && (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <span className="text-xs bg-gray-100 px-2 py-1 rounded-full ml-2 cursor-help">
+                              ℹ️
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Closed by: {selectedIssueDetails.closedBy}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </h4>
+                    <p className="text-gray-900" data-testid="text-contact-person">
+                      {selectedIssueDetails.contactPerson}
+                    </p>
+                  </div>
+
+                  {selectedIssueDetails.resolution && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-2">Resolution</h4>
+                      <p className="text-gray-700 text-sm" data-testid="text-resolution">
+                        {selectedIssueDetails.resolution}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      Created
+                    </h4>
+                    <p className="text-gray-700 text-sm" data-testid="text-detailed-created">
+                      {selectedIssueDetails.created}
+                    </p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      Last Updated
+                    </h4>
+                    <p className="text-gray-700 text-sm" data-testid="text-detailed-updated">
+                      {selectedIssueDetails.updated}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Accuracy Score Input */}
+              <div className="border-t pt-6">
+                <div className="max-w-md">
+                  <Label htmlFor="accuracy-score" className="block text-sm font-medium text-gray-700 mb-2">
+                    Accuracy Score (1-10)
+                  </Label>
+                  <Input
+                    id="accuracy-score"
+                    data-testid="input-accuracy-score"
+                    value={accuracyScore}
+                    onChange={handleAccuracyScoreChange}
+                    placeholder="Rate the similarity (1-10)"
+                    className="w-full"
+                    maxLength={2}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Rate how similar this issue is to your original issue (1 = not similar, 10 = identical)
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Actions</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button
+                    onClick={handleViewFixDetails}
+                    data-testid="button-view-fix"
+                    className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                  >
+                    <Eye className="w-4 h-4" />
+                    View Fix Details
+                  </Button>
+                  
+                  <Button
+                    onClick={handleViewRCADetails}
+                    data-testid="button-view-rca"
+                    className="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white"
+                  >
+                    <Search className="w-4 h-4" />
+                    View RCA Details
+                  </Button>
+                  
+                  <Button
+                    onClick={handleViewSVNDetails}
+                    data-testid="button-view-svn"
+                    className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white"
+                  >
+                    <GitBranch className="w-4 h-4" />
+                    View SVN Details
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Similar Issues with Radio Selection */}
-        {showSimilar && similarIssues.length > 0 && (
+        {showSimilar && similarIssues.length > 0 && !showDetailedView && (
           <Card className="p-6 shadow-lg border-2 border-indigo-100 bg-white" data-testid="container-similar-issues">
             <CardContent className="p-0">
               <div className="flex items-center justify-between mb-6">
