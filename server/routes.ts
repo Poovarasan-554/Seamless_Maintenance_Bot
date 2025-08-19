@@ -100,24 +100,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Mock similar issues data
       const similarIssues = [
         {
-          id: "REDMINE-8234",
-          system: "Redmine",
+          id: 8234,
           title: "Authentication timeout issues",
           status: "Resolved",
-          similarity_score: 0.89,
-          contact_person: "alice.smith@company.com",
+          priority: "High",
+          source: "redmine",
           description: "Users experiencing random authentication timeouts during login process",
+          assignee: "Alice Smith",
+          contactPerson: "alice.smith@company.com",
+          created: "2024-01-15 10:30:00",
+          updated: "2024-01-22 14:45:00",
           resolution: "Increased session timeout configuration and optimized database queries"
         },
         {
-          id: "MANTIS-3456",
-          system: "Mantis",
+          id: 3456,
           title: "Login validation errors with special characters",
           status: "Closed",
-          similarity_score: 0.76,
-          contact_person: "bob.wilson@company.com",
+          priority: "Medium",
+          source: "mantis",
           description: "Login form rejecting valid passwords containing special characters",
+          assignee: "Bob Wilson",
+          contactPerson: "bob.wilson@company.com",
+          created: "2024-01-18 09:15:00",
+          updated: "2024-01-25 16:20:00",
           resolution: "Updated input validation rules to accept all printable ASCII characters"
+        },
+        {
+          id: 9876,
+          title: "Session timeout configuration errors",
+          status: "Open",
+          priority: "High",
+          source: "redmine",
+          description: "Authentication sessions expiring too quickly causing user frustration",
+          assignee: "Carol Davis",
+          contactPerson: "carol.davis@company.com",
+          created: "2024-01-20 13:45:00",
+          updated: "2024-01-23 11:30:00"
+        },
+        {
+          id: 5432,
+          title: "Login form validation bypass",
+          status: "In Progress",
+          priority: "Medium",
+          source: "mantis",
+          description: "Users can bypass client-side validation on login forms",
+          assignee: "David Martinez",
+          contactPerson: "david.martinez@company.com",
+          created: "2024-01-22 08:00:00",
+          updated: "2024-01-24 15:10:00"
         }
       ];
       
