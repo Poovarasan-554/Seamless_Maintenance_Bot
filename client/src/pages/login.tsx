@@ -27,14 +27,28 @@ export default function Login() {
     setError("");
 
     try {
-      // Simulate login - in a real app, this would call your API
-      if (data.username === "admin" && data.password === "password") {
-        // Store login state in localStorage
+      // Call the FastAPI backend
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: data.username,
+          password: data.password,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // Store login state and token
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("username", data.username);
+        localStorage.setItem("username", result.user.username);
+        localStorage.setItem("authToken", result.token);
         setLocation("/issues");
       } else {
-        setError("Invalid username or password");
+        const error = await response.json();
+        setError(error.detail || "Invalid username or password");
       }
     } catch (err) {
       setError("Login failed. Please try again.");
@@ -44,7 +58,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center py-8 px-4">
       <Card className="w-full max-w-md shadow-lg border-2 border-blue-100">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 p-3 bg-blue-100 rounded-full w-fit">
@@ -124,13 +138,7 @@ export default function Login() {
             </form>
           </Form>
 
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 text-center">
-              <strong>Demo Credentials:</strong><br />
-              Username: admin<br />
-              Password: password
-            </p>
-          </div>
+
         </CardContent>
       </Card>
     </div>

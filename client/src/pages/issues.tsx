@@ -193,18 +193,13 @@ export default function Issues() {
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("username");
+    localStorage.removeItem("authToken");
     setLocation("/login");
   };
 
-  const handleFetchIssue = () => {
-    setError('');
-    setIssueDetails(null);
-    setShowSimilar(false);
-    setSimilarIssues([]);
-    setSelectedIssue('');
-
+  const handleFetchIssue = async () => {
     if (!issueId.trim()) {
-      setError('Issue ID is required');
+      setError("Please enter an issue ID");
       return;
     }
 
@@ -214,37 +209,96 @@ export default function Issues() {
     }
 
     setIsLoading(true);
+    setError("");
+    
+    // Clear previous data
+    setIssueDetails(null);
+    setShowSimilar(false);
+    setSimilarIssues([]);
+    setSelectedIssue('');
+    setShowNoMatches(false);
+    setShowRCAContent(false);
+    setShowDetailedView(false);
+    setSelectedIssueDetails(null);
 
-    // Simulate API call
-    setTimeout(() => {
-      const mockData: IssueDetails = {
-        id: parseInt(issueId),
-        title: `Sample Issue #${issueId}: API Integration Problem`,
-        description: 'The REST API endpoints are returning inconsistent response formats, causing parsing errors in the frontend application. This affects user data synchronization and may lead to data loss.',
-        status: 'Open',
-        priority: 'High',
-        assignee: 'John Doe',
-        created: '2024-01-15 10:30:00',
-        updated: '2024-01-20 14:22:00'
-      };
-      
-      setIssueDetails(mockData);
-      setIsLoading(false);
-    }, 1000);
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch(`/api/issues/${issueId}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.status === 404) {
+        if (issueId === "99999") {
+          setShowNoMatches(true);
+        } else {
+          setError("Issue not found. Please check the issue ID and try again.");
+        }
+      } else if (response.ok) {
+        const issue = await response.json();
+        setIssueDetails(issue);
+      } else if (response.status === 401) {
+        // Token expired, redirect to login
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("username");
+        window.location.href = "/login";
+      } else {
+        setError("Failed to fetch issue. Please try again.");
+      }
+    } catch (err) {
+      setError("Network error. Please check your connection and try again.");
+    }
+
+    setIsLoading(false);
   };
 
-  const handleFetchSimilarIssues = () => {
-    // Check for special case: no matches scenario
-    if (parseInt(issueId) === 99999) {
-      setShowNoMatches(true);
-      setShowSimilar(false);
-      setShowRCAContent(false);
-    } else {
-      setShowSimilar(true);
-      setShowNoMatches(false);
-      setSimilarIssues([...mockRedmineIssues, ...mockMantisIssues]);
+  const handleFetchSimilarIssues = async () => {
+    if (!issueId.trim()) {
+      setError("Please enter an issue ID first");
+      return;
     }
+
+    // Clear previous similar issues data
+    setShowSimilar(false);
+    setSimilarIssues([]);
     setSelectedIssue('');
+    setShowDetailedView(false);
+    setSelectedIssueDetails(null);
+    setShowRCAContent(false);
+
+    setIsLoading(true);
+
+    try {
+      const token = localStorage.getItem("authToken");
+      const response = await fetch(`/api/issues/${issueId}/similar`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const similarIssuesData = await response.json();
+        setSimilarIssues(similarIssuesData);
+        setShowSimilar(true);
+        setShowNoMatches(false);
+      } else if (response.status === 401) {
+        // Token expired, redirect to login
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("username");
+        window.location.href = "/login";
+      } else {
+        setError("Failed to fetch similar issues. Please try again.");
+      }
+    } catch (err) {
+      setError("Network error. Please check your connection and try again.");
+    }
+
+    setIsLoading(false);
   };
 
   const handleFindRCA = () => {
@@ -373,7 +427,7 @@ export default function Issues() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-6xl mx-auto">
         {/* Header with logout */}
         <div className="flex justify-between items-center mb-8">
@@ -382,7 +436,7 @@ export default function Issues() {
               <span className="text-3xl">🔧</span>
               Issue Tracker
             </h1>
-            <p className="text-lg text-gray-600">Welcome back, {username}!</p>
+            <p className="text-lg text-gray-600">Welcome back, Poovarasan!</p>
           </div>
           <Button
             onClick={handleLogout}
@@ -401,7 +455,7 @@ export default function Issues() {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="issueId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Issue ID (Try 99999 for no matches scenario)
+                  Issue ID
                 </Label>
                 <div className="flex space-x-4">
                   <div className="flex-1">
@@ -411,7 +465,7 @@ export default function Issues() {
                       value={issueId}
                       onChange={(e) => setIssueId(e.target.value)}
                       onKeyPress={handleKeyPress}
-                      placeholder="Enter issue ID (e.g., 1234 or 99999)"
+                      placeholder="Enter issue ID (e.g., 1234)"
                       disabled={isLoading}
                       className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-400"
                     />
