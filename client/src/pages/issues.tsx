@@ -965,7 +965,7 @@ export default function Issues() {
                       Redmine Issues
                     </h3>
                     <div className="space-y-3" data-testid="container-redmine-issues">
-                      {mockRedmineIssues.map(renderIssueCard)}
+                      {similarIssues.filter(issue => issue.source === 'redmine').map(renderIssueCard)}
                     </div>
                   </div>
                   
@@ -975,7 +975,7 @@ export default function Issues() {
                       Mantis Issues
                     </h3>
                     <div className="space-y-3" data-testid="container-mantis-issues">
-                      {mockMantisIssues.map(renderIssueCard)}
+                      {similarIssues.filter(issue => issue.source === 'mantis').map(renderIssueCard)}
                     </div>
                   </div>
                 </div>
