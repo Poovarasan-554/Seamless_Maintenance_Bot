@@ -111,11 +111,7 @@ export default function Issues() {
       });
 
       if (response.status === 404) {
-        if (issueId === "99999") {
-          setShowNoMatches(true);
-        } else {
-          setError("Issue not found. Please check the issue ID and try again.");
-        }
+        setError("Issue not found. Please check the issue ID and try again.");
       } else if (response.ok) {
         const issue = await response.json();
         setIssueDetails(issue);
@@ -160,6 +156,10 @@ export default function Issues() {
         setSimilarIssues(similarIssuesData);
         setShowSimilar(true);
         setShowNoMatches(false);
+      } else if (response.status === 404) {
+        // Show "No matches found" when similar issues endpoint returns 404
+        setShowNoMatches(true);
+        setShowSimilar(false);
       } else if (response.status === 401) {
         // Token expired, redirect to login
         localStorage.removeItem("isLoggedIn");
@@ -537,27 +537,17 @@ export default function Issues() {
                 </div>
 
                 <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-1">
-                      <User className="w-4 h-4" />
-                      Contact Person
-                      {selectedIssueDetails.status === 'Resolved' && selectedIssueDetails.closedBy && (
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <span className="text-xs bg-gray-100 px-2 py-1 rounded-full ml-2 cursor-help">
-                              ℹ️
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Closed by: {selectedIssueDetails.closedBy}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </h4>
-                    <p className="text-gray-900" data-testid="text-contact-person">
-                      {selectedIssueDetails.contactPerson}
-                    </p>
-                  </div>
+                  {(selectedIssueDetails.status === 'Closed' || selectedIssueDetails.status === 'Resolved') && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-1">
+                        <User className="w-4 h-4" />
+                        Contact Person
+                      </h4>
+                      <p className="text-gray-900" data-testid="text-contact-person">
+                        {selectedIssueDetails.closedBy || selectedIssueDetails.contactPerson}
+                      </p>
+                    </div>
+                  )}
 
                   {selectedIssueDetails.resolution && (
                     <div>

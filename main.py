@@ -272,7 +272,17 @@ async def login(request: LoginRequest):
 @app.get("/api/issues/{issue_id}", response_model=IssueDetails)
 async def get_issue(issue_id: int, username: str = Depends(verify_token)):
     if issue_id == 99999:
-        raise HTTPException(status_code=404, detail="Issue not found")
+        # Return a Redmine issue for 99999
+        return IssueDetails(
+            id=99999,
+            title="Redmine Authentication Issue",
+            description="Critical authentication issue in Redmine system causing login failures for multiple users. This issue requires immediate attention to prevent service disruption.",
+            status="Open",
+            priority="High",
+            assignee="Michael Johnson",
+            created="2024-01-23 08:15:00",
+            updated="2024-01-23 12:30:00"
+        )
     
     if issue_id not in mock_issues:
         raise HTTPException(status_code=404, detail="Issue not found")
@@ -282,7 +292,8 @@ async def get_issue(issue_id: int, username: str = Depends(verify_token)):
 @app.get("/api/issues/{issue_id}/similar", response_model=List[SimilarIssue])
 async def get_similar_issues(issue_id: int, username: str = Depends(verify_token)):
     if issue_id == 99999:
-        raise HTTPException(status_code=404, detail="Issue not found")
+        # For 99999, return 404 to trigger "No matches found"
+        raise HTTPException(status_code=404, detail="No similar issues found")
     
     if issue_id not in mock_issues:
         # Default issue data for other IDs
