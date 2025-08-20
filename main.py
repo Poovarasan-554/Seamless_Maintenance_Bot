@@ -307,9 +307,17 @@ async def health_check():
 # Serve static files from the built frontend
 if os.path.exists("dist/public"):
     app.mount("/assets", StaticFiles(directory="dist/public/assets"), name="assets")
-    app.mount("/", StaticFiles(directory="dist/public", html=True), name="client")
+    
+    # Serve React app for client routing (SPA fallback)
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        # Don't serve SPA for API routes
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        # Serve the React app index.html for all other routes
+        return FileResponse("dist/public/index.html")
 else:
-    # Fallback: Serve React app for client routing if build directory doesn't exist
+    # Fallback: Serve React app for client routing if build directory doesn't exist  
     @app.get("/{full_path:path}")
     async def serve_react_app(full_path: str):
         if full_path.startswith("api/"):
