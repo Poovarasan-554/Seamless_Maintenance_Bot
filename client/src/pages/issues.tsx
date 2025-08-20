@@ -41,6 +41,8 @@ export default function Issues() {
   const [issueId, setIssueId] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
+  const [isLoadingRCA, setIsLoadingRCA] = useState(false);
   const [issueDetails, setIssueDetails] = useState<IssueDetails | null>(null);
   const [similarIssues, setSimilarIssues] = useState<SimilarIssue[]>([]);
   const [showSimilar, setShowSimilar] = useState(false);
@@ -140,7 +142,7 @@ export default function Issues() {
     // Reset all future actions when fetching similar issues
     resetAllFutureActions();
 
-    setIsLoading(true);
+    setIsLoadingSimilar(true);
 
     try {
       const token = localStorage.getItem("authToken");
@@ -173,11 +175,21 @@ export default function Issues() {
       setError("Network error. Please check your connection and try again.");
     }
 
-    setIsLoading(false);
+    setIsLoadingSimilar(false);
   };
 
-  const handleFindRCA = () => {
-    setShowRCAContent(true);
+  const handleFindRCA = async () => {
+    setIsLoadingRCA(true);
+    // Simulate API call delay for RCA generation
+    setTimeout(() => {
+      setShowRCAContent(true);
+      setIsLoadingRCA(false);
+    }, 2000);
+  };
+
+  const handleBackFromRCA = () => {
+    setShowRCAContent(false);
+    setShowNoMatches(false);
   };
 
   const handleContinue = () => {
@@ -425,10 +437,20 @@ export default function Issues() {
                   <Button
                     data-testid="button-fetch-similar"
                     onClick={handleFetchSimilarIssues}
-                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                    disabled={isLoadingSimilar}
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
                   >
-                    <Search className="w-4 h-4 mr-2" />
-                    Fetch Similar Issues
+                    {isLoadingSimilar ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Searching...
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4 mr-2" />
+                        Fetch Similar Issues
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -438,21 +460,33 @@ export default function Issues() {
 
         {/* No Matches Scenario */}
         {showNoMatches && (
-          <Card className="p-6 mb-8 shadow-lg border-2 border-orange-200 bg-orange-50" data-testid="card-no-matches">
+          <Card className="p-8 mb-8 shadow-2xl border-0 bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl animate-in slide-in-from-bottom-4 duration-500" data-testid="card-no-matches">
             <CardContent className="p-0 text-center">
-              <h2 className="text-xl font-semibold text-orange-800 mb-4">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="text-3xl">🔍</div>
+              </div>
+              <h2 className="text-2xl font-bold text-red-800 mb-4">
                 No Matches Found
               </h2>
-              <div className="text-4xl mb-4">❌</div>
-              <p className="text-gray-700 mb-6">
-                No Matches Found. Kindly find RCA
+              <p className="text-gray-700 mb-8 text-lg leading-relaxed max-w-md mx-auto">
+                No similar issues were found in our database. We recommend performing a Root Cause Analysis to understand this unique issue.
               </p>
               <Button
                 data-testid="button-find-rca"
                 onClick={handleFindRCA}
-                className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white"
+                disabled={isLoadingRCA}
+                className="bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
               >
-                🔍 Find RCA
+                {isLoadingRCA ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    🔍 Find RCA
+                  </>
+                )}
               </Button>
             </CardContent>
           </Card>
@@ -460,15 +494,58 @@ export default function Issues() {
 
         {/* RCA Content */}
         {showRCAContent && (
-          <Card className="p-6 mb-8 shadow-lg border-2 border-yellow-200 bg-yellow-50" data-testid="card-rca-content">
+          <Card className="p-8 mb-8 shadow-2xl border-0 bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl animate-in slide-in-from-bottom-4 duration-500" data-testid="card-rca-content">
             <CardContent className="p-0">
-              <h3 className="text-lg font-semibold text-yellow-800 mb-4">Suggested RCA</h3>
-              <div className="bg-white border border-yellow-300 rounded-lg p-4">
-                <p className="text-gray-800">
-                  <strong>Suggested RCA:</strong><br/>
-                  Login issue caused by an outdated session token validation library.<br/>
-                  Issue is reproducible only on legacy builds.
-                </p>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-amber-800 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    🔬
+                  </div>
+                  Root Cause Analysis
+                </h3>
+                <Button
+                  onClick={handleBackFromRCA}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-back-from-rca"
+                  className="flex items-center gap-2 hover:bg-amber-100 transition-colors duration-200 rounded-lg border-amber-300 text-amber-700"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Back
+                </Button>
+              </div>
+              <div className="bg-white border border-amber-200 rounded-xl p-6 shadow-inner">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-amber-800 mb-2 text-lg">Primary Root Cause:</h4>
+                    <p className="text-gray-800 leading-relaxed">
+                      Login issue caused by an outdated session token validation library that fails to handle concurrent authentication requests properly.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-amber-800 mb-2 text-lg">Technical Details:</h4>
+                    <ul className="space-y-2 text-gray-700">
+                      <li className="flex items-start gap-2">
+                        <span className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></span>
+                        <span>Issue is reproducible only on legacy builds with JWT library version &lt; 2.1.0</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></span>
+                        <span>Race condition occurs during peak traffic (&gt;500 concurrent users)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></span>
+                        <span>Session timeout configuration conflicts with authentication middleware</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                    <h4 className="font-semibold text-amber-800 mb-2">Recommended Actions:</h4>
+                    <p className="text-gray-700">
+                      Upgrade authentication library to version 2.3.0+ and implement proper session management with timeout handling.
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
