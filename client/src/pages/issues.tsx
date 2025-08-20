@@ -33,6 +33,7 @@ interface SimilarIssue {
   created?: string;
   updated?: string;
   resolution?: string;
+  similarity_percentage: number;
 }
 
 export default function Issues() {
@@ -54,136 +55,7 @@ export default function Issues() {
 
   const username = localStorage.getItem("username") || "User";
 
-  // Dummy similar issues data with enhanced details
-  const mockRedmineIssues: SimilarIssue[] = [
-    { 
-      id: 101, 
-      title: 'Login fails', 
-      status: 'Open', 
-      priority: 'High', 
-      source: 'redmine',
-      description: 'Users are unable to login after entering correct credentials. The login form shows a generic error message.',
-      assignee: 'Sarah Johnson',
-      contactPerson: 'Mike Wilson',
-      created: '2024-01-10 09:15:00',
-      updated: '2024-01-18 14:30:00'
-    },
-    { 
-      id: 102, 
-      title: 'Session timeout too fast', 
-      status: 'In Progress', 
-      priority: 'Medium', 
-      source: 'redmine',
-      description: 'User sessions are expiring after only 5 minutes of inactivity instead of the expected 30 minutes.',
-      assignee: 'Alex Chen',
-      contactPerson: 'Jennifer Davis',
-      created: '2024-01-12 11:20:00',
-      updated: '2024-01-19 16:45:00'
-    },
-    { 
-      id: 103, 
-      title: 'Login button not working', 
-      status: 'Open', 
-      priority: 'High', 
-      source: 'redmine',
-      description: 'The login button becomes unresponsive on certain browsers after multiple failed attempts.',
-      assignee: 'David Rodriguez',
-      contactPerson: 'Lisa Thompson',
-      created: '2024-01-14 13:30:00',
-      updated: '2024-01-20 10:15:00'
-    },
-    { 
-      id: 104, 
-      title: 'Incorrect error on login', 
-      status: 'Open', 
-      priority: 'Medium', 
-      source: 'redmine',
-      description: 'Wrong error message displayed when user enters invalid credentials.',
-      assignee: 'Emma Taylor',
-      contactPerson: 'Robert Brown',
-      created: '2024-01-16 15:45:00',
-      updated: '2024-01-21 12:20:00'
-    },
-    { 
-      id: 105, 
-      title: 'UI freeze on login', 
-      status: 'Resolved', 
-      priority: 'Low', 
-      source: 'redmine',
-      description: 'Login interface occasionally freezes during authentication process on slower connections.',
-      assignee: 'Kevin White',
-      contactPerson: 'Amanda Green',
-      closedBy: 'John Miller',
-      created: '2024-01-08 08:00:00',
-      updated: '2024-01-22 17:30:00',
-      resolution: 'Fixed by optimizing authentication timeout settings'
-    }
-  ];
-
-  const mockMantisIssues: SimilarIssue[] = [
-    { 
-      id: 201, 
-      title: 'Login redirect broken', 
-      status: 'Open', 
-      priority: 'High', 
-      source: 'mantis',
-      description: 'After successful login, users are redirected to a blank page instead of the dashboard.',
-      assignee: 'Rachel Kim',
-      contactPerson: 'Steven Lee',
-      created: '2024-01-11 10:30:00',
-      updated: '2024-01-19 09:15:00'
-    },
-    { 
-      id: 202, 
-      title: 'Cannot logout after login', 
-      status: 'In Progress', 
-      priority: 'Medium', 
-      source: 'mantis',
-      description: 'Logout functionality fails to clear session data properly, keeping users logged in.',
-      assignee: 'Thomas Anderson',
-      contactPerson: 'Maria Garcia',
-      created: '2024-01-13 14:20:00',
-      updated: '2024-01-20 11:40:00'
-    },
-    { 
-      id: 203, 
-      title: 'Login test cases failing', 
-      status: 'Open', 
-      priority: 'High', 
-      source: 'mantis',
-      description: 'Automated test suite for login functionality showing failures across multiple scenarios.',
-      assignee: 'Nicole Parker',
-      contactPerson: 'James Wilson',
-      created: '2024-01-15 16:10:00',
-      updated: '2024-01-21 13:25:00'
-    },
-    { 
-      id: 204, 
-      title: 'Wrong credentials not handled', 
-      status: 'Open', 
-      priority: 'Medium', 
-      source: 'mantis',
-      description: 'Application does not properly handle and display errors for incorrect login credentials.',
-      assignee: 'Daniel Martinez',
-      contactPerson: 'Susan Clark',
-      created: '2024-01-17 12:45:00',
-      updated: '2024-01-22 08:50:00'
-    },
-    { 
-      id: 205, 
-      title: 'JS error on login screen', 
-      status: 'Resolved', 
-      priority: 'Low', 
-      source: 'mantis',
-      description: 'JavaScript console errors appearing on login page causing minor UI glitches.',
-      assignee: 'Laura Young',
-      contactPerson: 'Mark Johnson',
-      closedBy: 'Catherine Smith',
-      created: '2024-01-09 07:30:00',
-      updated: '2024-01-23 15:20:00',
-      resolution: 'Fixed JavaScript syntax error in login validation script'
-    }
-  ];
+  // Mock data removed - now using API data exclusively
 
   const validateIssueId = (id: string): boolean => {
     const numericId = parseInt(id);
@@ -195,6 +67,20 @@ export default function Issues() {
     localStorage.removeItem("username");
     localStorage.removeItem("authToken");
     setLocation("/login");
+  };
+
+  const resetAllFutureActions = () => {
+    // Reset all future actions when any previous action is performed
+    setShowSimilar(false);
+    setSimilarIssues([]);
+    setSelectedIssue('');
+    setShowNoMatches(false);
+    setShowRCAContent(false);
+    setShowDetailedView(false);
+    setSelectedIssueDetails(null);
+    setAccuracyScore('');
+    setIsAccuracySubmitted(false);
+    setActiveDetailCard(null);
   };
 
   const handleFetchIssue = async () => {
@@ -211,15 +97,9 @@ export default function Issues() {
     setIsLoading(true);
     setError("");
     
-    // Clear previous data
+    // Clear previous data and reset all future actions
     setIssueDetails(null);
-    setShowSimilar(false);
-    setSimilarIssues([]);
-    setSelectedIssue('');
-    setShowNoMatches(false);
-    setShowRCAContent(false);
-    setShowDetailedView(false);
-    setSelectedIssueDetails(null);
+    resetAllFutureActions();
 
     try {
       const token = localStorage.getItem("authToken");
@@ -261,13 +141,8 @@ export default function Issues() {
       return;
     }
 
-    // Clear previous similar issues data
-    setShowSimilar(false);
-    setSimilarIssues([]);
-    setSelectedIssue('');
-    setShowDetailedView(false);
-    setSelectedIssueDetails(null);
-    setShowRCAContent(false);
+    // Reset all future actions when fetching similar issues
+    resetAllFutureActions();
 
     setIsLoading(true);
 
@@ -311,7 +186,10 @@ export default function Issues() {
       if (issue) {
         setSelectedIssueDetails(issue);
         setShowDetailedView(true);
+        // Reset only relevant future actions
         setAccuracyScore('');
+        setIsAccuracySubmitted(false);
+        setActiveDetailCard(null);
       }
     }
   };
@@ -411,6 +289,11 @@ export default function Issues() {
               <h4 className="font-medium text-gray-900" data-testid={`text-issue-title-${issue.id}`}>
                 #{issue.id}: {issue.title}
               </h4>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full" data-testid={`similarity-${issue.id}`}>
+                  {issue.similarity_percentage.toFixed(1)}% match
+                </span>
+              </div>
             </div>
             <div className="flex gap-2">
               <Badge variant={getStatusBadgeVariant(issue.status)} data-testid={`badge-status-${issue.id}`}>
@@ -961,21 +844,31 @@ export default function Issues() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Redmine Issues */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-red-700 border-b border-red-200 pb-2">
-                      Redmine Issues
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-red-700 border-b border-red-200 pb-2">
+                        Redmine Issues (Top 5)
+                      </h3>
+                      <span className="text-sm text-gray-500">
+                        {similarIssues.filter(issue => issue.source === 'redmine').length} found
+                      </span>
+                    </div>
                     <div className="space-y-3" data-testid="container-redmine-issues">
-                      {similarIssues.filter(issue => issue.source === 'redmine').map(renderIssueCard)}
+                      {similarIssues.filter(issue => issue.source === 'redmine').slice(0, 5).map(renderIssueCard)}
                     </div>
                   </div>
                   
                   {/* Mantis Issues */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-blue-700 border-b border-blue-200 pb-2">
-                      Mantis Issues
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-medium text-blue-700 border-b border-blue-200 pb-2">
+                        Mantis Issues (Top 5)
+                      </h3>
+                      <span className="text-sm text-gray-500">
+                        {similarIssues.filter(issue => issue.source === 'mantis').length} found
+                      </span>
+                    </div>
                     <div className="space-y-3" data-testid="container-mantis-issues">
-                      {similarIssues.filter(issue => issue.source === 'mantis').map(renderIssueCard)}
+                      {similarIssues.filter(issue => issue.source === 'mantis').slice(0, 5).map(renderIssueCard)}
                     </div>
                   </div>
                 </div>

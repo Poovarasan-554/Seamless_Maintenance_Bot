@@ -56,6 +56,7 @@ class SimilarIssue(BaseModel):
     created: str
     updated: str
     contactPerson: str
+    similarity_percentage: float
     resolution: Optional[str] = None
     closedBy: Optional[str] = None
 
@@ -90,23 +91,25 @@ mock_issues = {
     )
 }
 
-mock_similar_issues = [
+# Mock similar issues data with top 5 from each system and similarity percentages
+redmine_similar_issues = [
     SimilarIssue(
         id=101,
         title="Login timeout on mobile app",
         description="Mobile users experiencing login timeouts after 30 seconds",
         status="Resolved",
-        priority="Medium",
+        priority="High",
         assignee="Alice Johnson",
         source="redmine",
         created="2024-01-15 14:20:00",
         updated="2024-01-18 16:30:00",
-        contactPerson="Alice Johnson (alice@company.com)",
+        contactPerson="alice.johnson@company.com",
+        similarity_percentage=92.5,
         resolution="Fixed timeout configuration in mobile client",
         closedBy="Alice Johnson"
     ),
     SimilarIssue(
-        id=202,
+        id=102,
         title="Authentication service intermittent failures",
         description="Auth service occasionally returns 500 errors during login attempts",
         status="Closed",
@@ -115,35 +118,126 @@ mock_similar_issues = [
         source="redmine",
         created="2024-01-12 09:45:00",
         updated="2024-01-16 13:15:00",
-        contactPerson="Bob Wilson (bob@company.com)",
+        contactPerson="bob.wilson@company.com",
+        similarity_percentage=88.3,
         resolution="Updated authentication middleware and improved error handling",
         closedBy="Bob Wilson"
     ),
     SimilarIssue(
-        id=303,
-        title="User session management issues",
-        description="Users getting logged out unexpectedly during active sessions",
+        id=103,
+        title="Login validation errors with special characters",
+        description="Login form rejecting valid passwords containing special characters",
+        status="Open",
+        priority="Medium",
+        assignee="Charlie Davis",
+        source="redmine",
+        created="2024-01-18 11:15:00",
+        updated="2024-01-21 09:30:00",
+        contactPerson="charlie.davis@company.com",
+        similarity_percentage=85.7
+    ),
+    SimilarIssue(
+        id=104,
+        title="Session management authentication issues",
+        description="Users authentication fails after session timeout without proper error message",
         status="In Progress",
         priority="Medium",
+        assignee="Diana Martinez",
+        source="redmine",
+        created="2024-01-19 15:45:00",
+        updated="2024-01-22 14:20:00",
+        contactPerson="diana.martinez@company.com",
+        similarity_percentage=82.1
+    ),
+    SimilarIssue(
+        id=105,
+        title="Auth token expiration handling",
+        description="Authentication tokens expire without user notification causing login confusion",
+        status="Open",
+        priority="Low",
+        assignee="Edward Thompson",
+        source="redmine",
+        created="2024-01-16 13:30:00",
+        updated="2024-01-20 11:45:00",
+        contactPerson="edward.thompson@company.com",
+        similarity_percentage=78.9
+    )
+]
+
+mantis_similar_issues = [
+    SimilarIssue(
+        id=201,
+        title="User session management issues",
+        description="Users getting logged out unexpectedly during active sessions",
+        status="Open",
+        priority="High",
         assignee="Carol Davis",
         source="mantis",
         created="2024-01-19 11:30:00",
         updated="2024-01-22 14:45:00",
-        contactPerson="Carol Davis (carol@company.com)"
+        contactPerson="carol.davis@company.com",
+        similarity_percentage=90.2
     ),
     SimilarIssue(
-        id=404,
+        id=202,
         title="Password reset functionality broken",
         description="Users unable to reset passwords through email link",
-        status="Open",
+        status="In Progress",
         priority="High",
         assignee="David Brown",
         source="mantis",
         created="2024-01-20 16:00:00",
         updated="2024-01-23 10:30:00",
-        contactPerson="David Brown (david@company.com)"
+        contactPerson="david.brown@company.com",
+        similarity_percentage=86.4
+    ),
+    SimilarIssue(
+        id=203,
+        title="Login redirect issues after authentication",
+        description="After successful login, users are redirected to wrong page or blank screen",
+        status="Resolved",
+        priority="Medium",
+        assignee="Eva Rodriguez",
+        source="mantis",
+        created="2024-01-14 10:15:00",
+        updated="2024-01-17 16:20:00",
+        contactPerson="eva.rodriguez@company.com",
+        similarity_percentage=83.7,
+        resolution="Fixed redirect URL configuration in authentication module",
+        closedBy="Eva Rodriguez"
+    ),
+    SimilarIssue(
+        id=204,
+        title="Multi-factor authentication bypass",
+        description="Users can sometimes bypass MFA during login process",
+        status="Closed",
+        priority="High",
+        assignee="Frank Wilson",
+        source="mantis",
+        created="2024-01-11 08:45:00",
+        updated="2024-01-15 12:30:00",
+        contactPerson="frank.wilson@company.com",
+        similarity_percentage=80.1,
+        resolution="Implemented strict MFA validation checks",
+        closedBy="Frank Wilson"
+    ),
+    SimilarIssue(
+        id=205,
+        title="Login form validation client-side bypass",
+        description="Client-side validation for login form can be bypassed allowing invalid input",
+        status="Open",
+        priority="Low",
+        assignee="Grace Lee",
+        source="mantis",
+        created="2024-01-17 14:20:00",
+        updated="2024-01-21 09:15:00",
+        contactPerson="grace.lee@company.com",
+        similarity_percentage=75.8
     )
 ]
+
+# Combine and sort by similarity percentage (top 5 from each system)
+mock_similar_issues = sorted(redmine_similar_issues + mantis_similar_issues, key=lambda x: x.similarity_percentage, reverse=True)
 
 # Auth helper functions
 def create_access_token(data: dict):
@@ -187,26 +281,41 @@ async def get_issue(issue_id: int, username: str = Depends(verify_token)):
 
 @app.get("/api/issues/{issue_id}/similar", response_model=List[SimilarIssue])
 async def get_similar_issues(issue_id: int, username: str = Depends(verify_token)):
-    if issue_id not in mock_issues:
+    if issue_id == 99999:
         raise HTTPException(status_code=404, detail="Issue not found")
     
+    if issue_id not in mock_issues:
+        # Default issue data for other IDs
+        mock_issues[issue_id] = IssueDetails(
+            id=issue_id,
+            title=f"Critical Bug in Authentication Module #{issue_id}",
+            description=f"This is a critical issue that needs immediate attention. The authentication module is failing to validate user credentials properly in certain edge cases. This affects user login functionality and could potentially lead to security vulnerabilities if not addressed promptly.",
+            status="Open",
+            priority="High",
+            assignee="Sarah Johnson",
+            created="2024-01-15 09:30:00",
+            updated="2024-01-16 14:22:00"
+        )
+    
+    # Return sorted similar issues (already sorted by similarity percentage)
     return mock_similar_issues
 
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
-# Serve static files
-if os.path.exists("client"):
-    app.mount("/assets", StaticFiles(directory="client"), name="assets")
-
-# Serve React app
-@app.get("/{full_path:path}")
-async def serve_react_app(full_path: str):
-    if full_path.startswith("api/"):
-        raise HTTPException(status_code=404, detail="API endpoint not found")
-    return FileResponse("client/index.html")
+# Serve static files from the built frontend
+if os.path.exists("dist/public"):
+    app.mount("/assets", StaticFiles(directory="dist/public/assets"), name="assets")
+    app.mount("/", StaticFiles(directory="dist/public", html=True), name="client")
+else:
+    # Fallback: Serve React app for client routing if build directory doesn't exist
+    @app.get("/{full_path:path}")
+    async def serve_react_app(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        return FileResponse("index.html")
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
-    uvicorn.run(app, host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
