@@ -58,6 +58,8 @@ export default function Issues() {
   const [isAccuracySubmitted, setIsAccuracySubmitted] = useState(false);
   const [selectedIssueDetails, setSelectedIssueDetails] = useState<SimilarIssue | null>(null);
   const [activeDetailCard, setActiveDetailCard] = useState<'fix' | 'rca' | 'svn' | null>(null);
+  const [showSqlModal, setShowSqlModal] = useState(false);
+  const [selectedSqlIssue, setSelectedSqlIssue] = useState<SimilarIssue | null>(null);
 
   const username = localStorage.getItem("username") || "User";
 
@@ -319,45 +321,76 @@ export default function Issues() {
     }
   };
 
+  const handleSqlQueryDetails = (issue: SimilarIssue, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedSqlIssue(issue);
+    setShowSqlModal(true);
+  };
+
+  const handleContinueWithIssue = (issue: SimilarIssue) => {
+    setSelectedIssue(issue.id.toString());
+    setSelectedIssueDetails(issue);
+    setShowDetailedView(true);
+    // Reset only relevant future actions
+    setAccuracyScore('');
+    setIsAccuracySubmitted(false);
+    setActiveDetailCard(null);
+  };
+
   const renderIssueCard = (issue: SimilarIssue) => {
-    const isSelected = selectedIssue === issue.id.toString();
     return (
       <div 
         key={issue.id}
-        className={`p-5 border-2 rounded-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] ${
-          isSelected 
-            ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-blue-100 shadow-lg ring-2 ring-blue-200' 
-            : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-md'
-        }`}
-        onClick={() => setSelectedIssue(issue.id.toString())}
+        className="p-5 border-2 rounded-xl transition-all duration-300 transform hover:scale-[1.02] border-gray-200 bg-white hover:border-gray-300 hover:shadow-md"
         data-testid={`card-issue-${issue.id}`}
       >
-        <div className="flex items-start gap-3">
-          <RadioGroupItem 
-            value={issue.id.toString()} 
-            id={`issue-${issue.id}`}
-            className="mt-1"
-            data-testid={`radio-issue-${issue.id}`}
-          />
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center justify-between">
+        <div className="space-y-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 space-y-2">
               <h4 className="font-medium text-gray-900" data-testid={`text-issue-title-${issue.id}`}>
                 #{issue.id}: {issue.title}
               </h4>
+              {issue.description && (
+                <p className="text-sm text-gray-600 leading-relaxed" data-testid={`text-issue-description-${issue.id}`}>
+                  {issue.description}
+                </p>
+              )}
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full" data-testid={`similarity-${issue.id}`}>
-                  {issue.similarity_percentage.toFixed(1)}% match
-                </span>
+                <Badge variant={getStatusBadgeVariant(issue.status)} data-testid={`badge-status-${issue.id}`}>
+                  {issue.status}
+                </Badge>
+                <Badge variant={getPriorityBadgeVariant(issue.priority)} data-testid={`badge-priority-${issue.id}`}>
+                  {issue.priority}
+                </Badge>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Badge variant={getStatusBadgeVariant(issue.status)} data-testid={`badge-status-${issue.id}`}>
-                {issue.status}
-              </Badge>
-              <Badge variant={getPriorityBadgeVariant(issue.priority)} data-testid={`badge-priority-${issue.id}`}>
-                {issue.priority}
-              </Badge>
-            </div>
+            <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full" data-testid={`similarity-${issue.id}`}>
+              {issue.similarity_percentage.toFixed(1)}% match
+            </span>
+          </div>
+          
+          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+            {issue.source === 'redmine' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => handleSqlQueryDetails(issue, e)}
+                data-testid={`button-sql-query-${issue.id}`}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200"
+              >
+                <Code className="w-4 h-4 mr-1" />
+                SQL Query Details
+              </Button>
+            )}
+            {issue.source === 'mantis' && <div></div>}
+            
+            <Button
+              onClick={() => handleContinueWithIssue(issue)}
+              data-testid={`button-continue-${issue.id}`}
+              className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-sm px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+            >
+              Continue with this issue
+            </Button>
           </div>
         </div>
       </div>
@@ -1064,61 +1097,168 @@ export default function Issues() {
           </Card>
         )}
 
-        {/* Similar Issues with Radio Selection */}
+        {/* Similar Issues with Direct Continue Buttons */}
         {showSimilar && similarIssues.length > 0 && !showDetailedView && (
           <Card className="p-8 shadow-xl border-0 bg-gradient-to-br from-white to-indigo-50 rounded-2xl" data-testid="container-similar-issues">
             <CardContent className="p-0">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Similar Issues</h2>
-                <p className="text-sm text-gray-500">Select one issue to continue</p>
+                <p className="text-sm text-gray-500">Click "Continue with this issue" on any issue below</p>
               </div>
               
-              <RadioGroup value={selectedIssue} onValueChange={setSelectedIssue}>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Redmine Issues */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-red-700 border-b border-red-200 pb-2">
-                        Redmine Issues (Top 5)
-                      </h3>
-                      <span className="text-sm text-gray-500">
-                        {similarIssues.filter(issue => issue.source === 'redmine').length} found
-                      </span>
-                    </div>
-                    <div className="space-y-3" data-testid="container-redmine-issues">
-                      {similarIssues.filter(issue => issue.source === 'redmine').slice(0, 5).map(renderIssueCard)}
-                    </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Redmine Issues */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium text-red-700 border-b border-red-200 pb-2">
+                      Redmine Issues (Top 5)
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      {similarIssues.filter(issue => issue.source === 'redmine').length} found
+                    </span>
                   </div>
-                  
-                  {/* Mantis Issues */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-medium text-blue-700 border-b border-blue-200 pb-2">
-                        Mantis Issues (Top 5)
-                      </h3>
-                      <span className="text-sm text-gray-500">
-                        {similarIssues.filter(issue => issue.source === 'mantis').length} found
-                      </span>
-                    </div>
-                    <div className="space-y-3" data-testid="container-mantis-issues">
-                      {similarIssues.filter(issue => issue.source === 'mantis').slice(0, 5).map(renderIssueCard)}
-                    </div>
+                  <div className="space-y-3" data-testid="container-redmine-issues">
+                    {similarIssues.filter(issue => issue.source === 'redmine').slice(0, 5).map(renderIssueCard)}
                   </div>
                 </div>
-              </RadioGroup>
-              
-              <div className="mt-6 pt-4 border-t border-gray-200 text-center">
-                <Button
-                  data-testid="button-continue"
-                  onClick={handleContinue}
-                  disabled={!selectedIssue}
-                  className="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                >
-                  Continue with Selected Issue
-                </Button>
+                
+                {/* Mantis Issues */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium text-blue-700 border-b border-blue-200 pb-2">
+                      Mantis Issues (Top 5)
+                    </h3>
+                    <span className="text-sm text-gray-500">
+                      {similarIssues.filter(issue => issue.source === 'mantis').length} found
+                    </span>
+                  </div>
+                  <div className="space-y-3" data-testid="container-mantis-issues">
+                    {similarIssues.filter(issue => issue.source === 'mantis').slice(0, 5).map(renderIssueCard)}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* SQL Query Details Modal */}
+        {showSqlModal && selectedSqlIssue && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" data-testid="modal-sql-query">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <Code className="w-6 h-6 text-blue-600" />
+                    SQL Query Details - Issue #{selectedSqlIssue.id}
+                  </h2>
+                  <Button
+                    onClick={() => {
+                      setShowSqlModal(false);
+                      setSelectedSqlIssue(null);
+                    }}
+                    variant="ghost"
+                    size="sm"
+                    data-testid="button-close-sql-modal"
+                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-2"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+                
+                <div className="space-y-6">
+                  {/* Issue Summary */}
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <h3 className="font-semibold text-blue-900 mb-2">Issue Summary</h3>
+                    <p className="text-blue-800">{selectedSqlIssue.title}</p>
+                    {selectedSqlIssue.description && (
+                      <p className="text-blue-700 text-sm mt-2">{selectedSqlIssue.description}</p>
+                    )}
+                  </div>
+                  
+                  {/* SQL Query */}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Code className="w-5 h-5" />
+                      Related SQL Query
+                    </h3>
+                    <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                      <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap" data-testid="sql-query-content">
+{`SELECT 
+    i.issue_id,
+    i.title,
+    i.description,
+    i.status,
+    i.priority,
+    i.assignee,
+    i.created_date,
+    i.updated_date,
+    p.project_name
+FROM issues i
+LEFT JOIN projects p ON i.project_id = p.project_id
+WHERE i.issue_id = ${selectedSqlIssue.id}
+    AND i.status IN ('Open', 'In Progress', 'Resolved')
+ORDER BY i.updated_date DESC;`}
+                      </pre>
+                    </div>
+                  </div>
+                  
+                  {/* Query Explanation */}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3">Query Explanation</h3>
+                    <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
+                      <ul className="space-y-2 text-gray-700">
+                        <li className="flex items-start gap-2">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></span>
+                          <span>Retrieves detailed information for issue #{selectedSqlIssue.id} from the Redmine database</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></span>
+                          <span>Joins with projects table to get associated project information</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></span>
+                          <span>Filters by active status and orders by last update date</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="w-2 h-2 bg-amber-500 rounded-full mt-2 flex-shrink-0"></span>
+                          <span>Includes all relevant fields for comprehensive issue analysis</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  {/* Database Schema Info */}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-3">Database Schema Reference</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-800 mb-2">issues Table</h4>
+                        <ul className="text-sm text-gray-600 space-y-1 font-mono">
+                          <li>• issue_id (PRIMARY KEY)</li>
+                          <li>• title (VARCHAR)</li>
+                          <li>• description (TEXT)</li>
+                          <li>• status (ENUM)</li>
+                          <li>• priority (ENUM)</li>
+                          <li>• assignee (VARCHAR)</li>
+                          <li>• project_id (FOREIGN KEY)</li>
+                        </ul>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <h4 className="font-medium text-gray-800 mb-2">projects Table</h4>
+                        <ul className="text-sm text-gray-600 space-y-1 font-mono">
+                          <li>• project_id (PRIMARY KEY)</li>
+                          <li>• project_name (VARCHAR)</li>
+                          <li>• description (TEXT)</li>
+                          <li>• status (ENUM)</li>
+                          <li>• created_date (TIMESTAMP)</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
