@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +39,10 @@ interface SimilarIssue {
 
 export default function Issues() {
   const [, setLocation] = useLocation();
+  const [issueType, setIssueType] = useState<'redmine' | 'mantis' | 'problem'>('redmine');
   const [issueId, setIssueId] = useState('');
+  const [mantisId, setMantisId] = useState('');
+  const [problemStatement, setProblemStatement] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
@@ -86,13 +90,30 @@ export default function Issues() {
   };
 
   const handleFetchIssue = async () => {
-    if (!issueId.trim()) {
-      setError("Please enter an issue ID");
-      return;
-    }
-
-    if (!validateIssueId(issueId)) {
-      setError('Please enter a valid numeric Issue ID');
+    let currentId = '';
+    
+    if (issueType === 'redmine') {
+      if (!issueId.trim()) {
+        setError("Please enter a Redmine issue ID");
+        return;
+      }
+      if (!validateIssueId(issueId)) {
+        setError('Please enter a valid numeric Redmine Issue ID');
+        return;
+      }
+      currentId = issueId;
+    } else if (issueType === 'mantis') {
+      if (!mantisId.trim()) {
+        setError("Please enter a Mantis issue ID");
+        return;
+      }
+      if (!validateIssueId(mantisId)) {
+        setError('Please enter a valid numeric Mantis Issue ID');
+        return;
+      }
+      currentId = mantisId;
+    } else {
+      setError("Invalid issue type selected");
       return;
     }
 
@@ -105,7 +126,7 @@ export default function Issues() {
 
     try {
       const token = localStorage.getItem("authToken");
-      const response = await fetch(`/api/issues/${issueId}`, {
+      const response = await fetch(`/api/issues/${currentId}`, {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -134,9 +155,27 @@ export default function Issues() {
   };
 
   const handleFetchSimilarIssues = async () => {
-    if (!issueId.trim()) {
-      setError("Please enter an issue ID first");
-      return;
+    let currentId = '';
+    
+    if (issueType === 'redmine') {
+      if (!issueId.trim()) {
+        setError("Please enter a Redmine issue ID first");
+        return;
+      }
+      currentId = issueId;
+    } else if (issueType === 'mantis') {
+      if (!mantisId.trim()) {
+        setError("Please enter a Mantis issue ID first");
+        return;
+      }
+      currentId = mantisId;
+    } else if (issueType === 'problem') {
+      if (!problemStatement.trim()) {
+        setError("Please enter a problem statement first");
+        return;
+      }
+      // For problem statements, we'll use a default ID to trigger similar issues
+      currentId = '1234';
     }
 
     // Reset all future actions when fetching similar issues
@@ -146,7 +185,7 @@ export default function Issues() {
 
     try {
       const token = localStorage.getItem("authToken");
-      const response = await fetch(`/api/issues/${issueId}/similar`, {
+      const response = await fetch(`/api/issues/${currentId}/similar`, {
         headers: {
           "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -246,7 +285,11 @@ export default function Issues() {
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleFetchIssue();
+      if (issueType === 'problem') {
+        handleFetchSimilarIssues();
+      } else {
+        handleFetchIssue();
+      }
     }
   };
 
@@ -344,56 +387,179 @@ export default function Issues() {
           </Button>
         </div>
 
-        {/* Search Form */}
+        {/* Issue Type Selection */}
         <Card className="p-8 mb-8 shadow-xl border-0 bg-gradient-to-br from-white to-blue-50 rounded-2xl">
           <CardContent className="p-0">
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <Label htmlFor="issueId" className="block text-sm font-medium text-gray-700 mb-2">
-                  Issue ID
+                <Label className="block text-sm font-medium text-gray-700 mb-4">
+                  Select Issue Type
                 </Label>
-                <div className="flex space-x-4">
-                  <div className="flex-1">
-                    <Input
-                      id="issueId"
-                      data-testid="input-issue-id"
-                      value={issueId}
-                      onChange={(e) => setIssueId(e.target.value)}
-                      onKeyPress={handleKeyPress}
-                      placeholder="Enter issue ID (e.g., 1234)"
-                      disabled={isLoading}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-400"
-                    />
-                    {error && (
-                      <p className="mt-2 text-sm text-red-500 flex items-center" data-testid="text-error">
-                        <AlertCircle className="w-4 h-4 mr-1" />
-                        {error}
-                      </p>
-                    )}
+                <RadioGroup
+                  value={issueType}
+                  onValueChange={(value: 'redmine' | 'mantis' | 'problem') => {
+                    setIssueType(value);
+                    setError('');
+                    setIssueDetails(null);
+                    resetAllFutureActions();
+                  }}
+                  className="flex space-x-6"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="redmine" id="redmine" data-testid="radio-redmine" />
+                    <Label htmlFor="redmine" className="cursor-pointer">Redmine ID</Label>
                   </div>
-                  <Button
-                    data-testid="button-fetch-issue"
-                    onClick={handleFetchIssue}
-                    disabled={isLoading}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
-                        Fetching...
-                      </>
-                    ) : (
-                      'Fetch Issue'
-                    )}
-                  </Button>
-                </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="mantis" id="mantis" data-testid="radio-mantis" />
+                    <Label htmlFor="mantis" className="cursor-pointer">Mantis ID</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="problem" id="problem" data-testid="radio-problem" />
+                    <Label htmlFor="problem" className="cursor-pointer">Problem Statement</Label>
+                  </div>
+                </RadioGroup>
               </div>
+
+              {/* Redmine ID Input */}
+              {issueType === 'redmine' && (
+                <div>
+                  <Label htmlFor="redmineId" className="block text-sm font-medium text-gray-700 mb-2">
+                    Redmine Issue ID
+                  </Label>
+                  <div className="flex space-x-4">
+                    <div className="flex-1">
+                      <Input
+                        id="redmineId"
+                        data-testid="input-redmine-id"
+                        value={issueId}
+                        onChange={(e) => setIssueId(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Enter Redmine issue ID (e.g., 1234)"
+                        disabled={isLoading}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-400"
+                      />
+                      {error && (
+                        <p className="mt-2 text-sm text-red-500 flex items-center" data-testid="text-error">
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {error}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      data-testid="button-fetch-redmine-issue"
+                      onClick={handleFetchIssue}
+                      disabled={isLoading || !issueId.trim()}
+                      className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                          Fetching...
+                        </>
+                      ) : (
+                        'Fetch Issue'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Mantis ID Input */}
+              {issueType === 'mantis' && (
+                <div>
+                  <Label htmlFor="mantisId" className="block text-sm font-medium text-gray-700 mb-2">
+                    Mantis Issue ID
+                  </Label>
+                  <div className="flex space-x-4">
+                    <div className="flex-1">
+                      <Input
+                        id="mantisId"
+                        data-testid="input-mantis-id"
+                        value={mantisId}
+                        onChange={(e) => setMantisId(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Enter Mantis issue ID (e.g., 5678)"
+                        disabled={isLoading}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-green-400"
+                      />
+                      {error && (
+                        <p className="mt-2 text-sm text-red-500 flex items-center" data-testid="text-error">
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {error}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      data-testid="button-fetch-mantis-issue"
+                      onClick={handleFetchIssue}
+                      disabled={isLoading || !mantisId.trim()}
+                      className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                          Fetching...
+                        </>
+                      ) : (
+                        'Fetch Issue'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Problem Statement Input */}
+              {issueType === 'problem' && (
+                <div>
+                  <Label htmlFor="problemStatement" className="block text-sm font-medium text-gray-700 mb-2">
+                    Problem Statement
+                  </Label>
+                  <div className="space-y-4">
+                    <div className="flex-1">
+                      <Textarea
+                        id="problemStatement"
+                        data-testid="input-problem-statement"
+                        value={problemStatement}
+                        onChange={(e) => setProblemStatement(e.target.value)}
+                        placeholder="Describe the problem you're experiencing..."
+                        disabled={isLoadingSimilar}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-400 min-h-[120px] resize-y"
+                        rows={4}
+                      />
+                      {error && (
+                        <p className="mt-2 text-sm text-red-500 flex items-center" data-testid="text-error">
+                          <AlertCircle className="w-4 h-4 mr-1" />
+                          {error}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      data-testid="button-fetch-similar-from-problem"
+                      onClick={handleFetchSimilarIssues}
+                      disabled={isLoadingSimilar || !problemStatement.trim()}
+                      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    >
+                      {isLoadingSimilar ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Searching...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="w-4 h-4 mr-2" />
+                          Fetch Similar Issues
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Issue Details */}
-        {issueDetails && (
+        {/* Issue Details - Only show for Redmine and Mantis, not for Problem Statement */}
+        {issueDetails && issueType !== 'problem' && (
           <Card className="p-8 mb-8 shadow-xl border-0 bg-gradient-to-br from-white to-green-50 rounded-2xl" data-testid="card-issue-details">
             <CardContent className="p-0">
               <div className="space-y-4">
