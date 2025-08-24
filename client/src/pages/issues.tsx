@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { AlertCircle, Search, Loader2, LogOut, User, Calendar, Clock, ArrowLeft, Eye, Code, GitBranch, X, CheckCircle, Edit } from "lucide-react";
+import { AlertCircle, Search, Loader2, LogOut, User, Calendar, Clock, ArrowLeft, Eye, Code, GitBranch, X, CheckCircle, Edit, ExternalLink } from "lucide-react";
 
 interface IssueDetails {
   id: number;
@@ -370,19 +370,44 @@ export default function Issues() {
           </div>
           
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-            {issue.source === 'redmine' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => handleSqlQueryDetails(issue, e)}
-                data-testid={`button-sql-query-${issue.id}`}
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200"
-              >
-                <Code className="w-4 h-4 mr-1" />
-                SQL Query Details
-              </Button>
-            )}
-            {issue.source === 'mantis' && <div></div>}
+            <div className="flex items-center gap-2">
+              {issue.source === 'redmine' && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => handleSqlQueryDetails(issue, e)}
+                    data-testid={`button-sql-query-${issue.id}`}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200"
+                  >
+                    <Code className="w-4 h-4 mr-1" />
+                    SQL Query Details
+                  </Button>
+                  <a
+                    href={`https://redmine.company.com/issues/${issue.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-sm text-red-600 hover:text-red-700 hover:underline transition-colors duration-200"
+                    data-testid={`link-redmine-${issue.id}`}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-1" />
+                    View in Redmine
+                  </a>
+                </>
+              )}
+              {issue.source === 'mantis' && (
+                <a
+                  href={`https://mantis.company.com/view.php?id=${issue.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors duration-200"
+                  data-testid={`link-mantis-${issue.id}`}
+                >
+                  <ExternalLink className="w-4 h-4 mr-1" />
+                  View in Mantis
+                </a>
+              )}
+            </div>
             
             <Button
               onClick={() => handleContinueWithIssue(issue)}
