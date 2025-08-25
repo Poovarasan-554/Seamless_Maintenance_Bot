@@ -372,40 +372,16 @@ export default function Issues() {
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
             <div className="flex items-center gap-2">
               {issue.source === 'redmine' && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => handleSqlQueryDetails(issue, e)}
-                    data-testid={`button-sql-query-${issue.id}`}
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200"
-                  >
-                    <Code className="w-4 h-4 mr-1" />
-                    SQL Query Details
-                  </Button>
-                  <a
-                    href={`https://redmine.company.com/issues/${issue.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-sm text-red-600 hover:text-red-700 hover:underline transition-colors duration-200"
-                    data-testid={`link-redmine-${issue.id}`}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-1" />
-                    View in Redmine
-                  </a>
-                </>
-              )}
-              {issue.source === 'mantis' && (
-                <a
-                  href={`https://mantis.company.com/view.php?id=${issue.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 hover:underline transition-colors duration-200"
-                  data-testid={`link-mantis-${issue.id}`}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => handleSqlQueryDetails(issue, e)}
+                  data-testid={`button-sql-query-${issue.id}`}
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200"
                 >
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  View in Mantis
-                </a>
+                  <Code className="w-4 h-4 mr-1" />
+                  SQL Query Details
+                </Button>
               )}
             </div>
             
@@ -797,6 +773,23 @@ export default function Issues() {
                   >
                     {selectedIssueDetails.source.toUpperCase()}
                   </Badge>
+                  <a
+                    href={selectedIssueDetails.source === 'redmine' 
+                      ? `https://redmine.company.com/issues/${selectedIssueDetails.id}`
+                      : `https://mantis.company.com/view.php?id=${selectedIssueDetails.id}`
+                    }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`inline-flex items-center text-sm px-3 py-1.5 rounded-lg border transition-all duration-200 hover:shadow-md ${
+                      selectedIssueDetails.source === 'redmine'
+                        ? 'text-red-600 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50'
+                        : 'text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300 hover:bg-blue-50'
+                    }`}
+                    data-testid={`link-${selectedIssueDetails.source}-${selectedIssueDetails.id}`}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-1.5" />
+                    View in {selectedIssueDetails.source === 'redmine' ? 'Redmine' : 'Mantis'}
+                  </a>
                 </div>
                 <Badge variant={getStatusBadgeVariant(selectedIssueDetails.status)} data-testid="badge-detailed-status">
                   {selectedIssueDetails.status}
