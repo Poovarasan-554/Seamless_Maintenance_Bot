@@ -127,9 +127,8 @@ export default function Issues() {
     resetAllFutureActions();
 
     try {
-      const response = await fetch(`https://pmt.infinitisoftware.net/issues/${currentId}.json`, {
+      const response = await fetch(`http://localhost/support-ticket-analyzer/redmineData.php?id=${currentId}`, {
         headers: {
-          "X-Redmine-API-Key": "9f2b4ae1c6d3430b8ea597cf2186c8f2e4b57c1e",
           "Content-Type": "application/json",
         },
       });
@@ -155,6 +154,7 @@ export default function Issues() {
         setError("Failed to fetch issue. Please try again.");
       }
     } catch (err) {
+      console.error('Error fetching issue:', err);
       setError("Network error. Please check your connection and try again.");
     }
 
@@ -196,9 +196,8 @@ export default function Issues() {
         query = problemStatement.trim();
       } else {
         // First get the issue details to construct the query
-        const issueResponse = await fetch(`https://pmt.infinitisoftware.net/issues/${currentId}.json`, {
+        const issueResponse = await fetch(`http://localhost/support-ticket-analyzer/redmineData.php?id=${currentId}`, {
           headers: {
-            "X-Redmine-API-Key": "9f2b4ae1c6d3430b8ea597cf2186c8f2e4b57c1e",
             "Content-Type": "application/json",
           },
         });
@@ -240,6 +239,7 @@ export default function Issues() {
         setError("Failed to fetch similar issues. Please try again.");
       }
     } catch (err) {
+      console.error('Error fetching similar issues:', err);
       setError("Network error. Please check your connection and try again.");
     }
 

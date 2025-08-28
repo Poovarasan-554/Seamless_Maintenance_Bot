@@ -67,9 +67,8 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://pmt.infinitisoftware.net/issues/${issueId}.json`, {
+      const response = await fetch(`http://localhost/support-ticket-analyzer/redmineData.php?id=${issueId}`, {
         headers: {
-          "X-Redmine-API-Key": "9f2b4ae1c6d3430b8ea597cf2186c8f2e4b57c1e",
           "Content-Type": "application/json",
         },
       });
@@ -95,6 +94,7 @@ export default function Home() {
         setError("Failed to fetch issue. Please try again.");
       }
     } catch (err) {
+      console.error('Error fetching issue:', err);
       setError("Network error. Please check your connection and try again.");
     }
 

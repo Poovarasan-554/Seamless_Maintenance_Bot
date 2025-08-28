@@ -1,0 +1,88 @@
+{
+    "issue": {
+        "id": 55555,
+        "project": {
+            "id": 45,
+            "name": "Ethiopian Airlines - ET"
+        },
+        "tracker": {
+            "id": 6,
+            "name": "Implementation"
+        },
+        "status": {
+            "id": 2,
+            "name": "In Progress",
+            "is_closed": false
+        },
+        "priority": {
+            "id": 2,
+            "name": "MEDIUM"
+        },
+        "author": {
+            "id": 258,
+            "name": "Sathish Babu G ISS680"
+        },
+        "assigned_to": {
+            "id": 258,
+            "name": "Sathish Babu G ISS680"
+        },
+        "parent": {
+            "id": 22532
+        },
+        "subject": "ET -  Payment Gateway API modules and services and other bug fixings",
+        "description": "<div>ET - &nbsp;Payment Gateway API modules and services and other bug fixings</div>\r\n",
+        "start_date": "2025-08-07",
+        "due_date": "2025-08-12",
+        "done_ratio": 0,
+        "is_private": false,
+        "estimated_hours": 24.0,
+        "total_estimated_hours": 24.0,
+        "spent_hours": 25.25,
+        "total_spent_hours": 25.25,
+        "custom_fields": [
+            {
+                "id": 15,
+                "name": "Story Points ",
+                "value": ""
+            },
+            {
+                "id": 23,
+                "name": "Airline",
+                "value": "ET - Ethiopia"
+            },
+            {
+                "id": 24,
+                "name": "Assign to Team",
+                "value": "Webservice"
+            },
+            {
+                "id": 25,
+                "name": "Zoho Reference id",
+                "value": ""
+            },
+            {
+                "id": 26,
+                "name": "SVN Reference Id",
+                "value": ""
+            },
+            {
+                "id": 42,
+                "name": "Live Movement Date",
+                "value": ""
+            },
+            {
+                "id": 50,
+                "name": "Assign_to_QA",
+                "value": ""
+            },
+            {
+                "id": 51,
+                "name": "Assign_to_customer_testing",
+                "value": ""
+            }
+        ],
+        "created_on": "2025-08-07T05:03:22Z",
+        "updated_on": "2025-08-07T05:03:22Z",
+        "closed_on": null
+    }
+}
