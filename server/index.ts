@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 
 console.log("Starting Python FastAPI server...");
 
-const pythonProcess = spawn("python", ["start_server.py"], {
+const pythonProcess = spawn(".pythonlibs/bin/python", ["start_server.py"], {
   stdio: "inherit",
   cwd: process.cwd()
 });
