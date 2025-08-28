@@ -127,10 +127,9 @@ export default function Issues() {
     resetAllFutureActions();
 
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await fetch(`/api/issues/${currentId}`, {
+      const response = await fetch(`https://pmt.infinitisoftware.net/issues/${currentId}.json`, {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          "X-Redmine-API-Key": "9f2b4ae1c6d3430b8ea597cf2186c8f2e4b57c1e",
           "Content-Type": "application/json",
         },
       });
@@ -138,14 +137,20 @@ export default function Issues() {
       if (response.status === 404) {
         setError("Issue not found. Please check the issue ID and try again.");
       } else if (response.ok) {
-        const issue = await response.json();
-        setIssueDetails(issue);
-      } else if (response.status === 401) {
-        // Token expired, redirect to login
-        localStorage.removeItem("isLoggedIn");
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("username");
-        window.location.href = "/login";
+        const data = await response.json();
+        const issue = data.issue;
+        // Transform Redmine response to our format
+        const transformedIssue = {
+          id: issue.id,
+          title: issue.subject,
+          description: issue.description || 'No description available',
+          status: issue.status.name,
+          priority: issue.priority.name,
+          assignee: issue.assigned_to ? issue.assigned_to.name : 'Unassigned',
+          created: issue.created_on,
+          updated: issue.updated_on
+        };
+        setIssueDetails(transformedIssue);
       } else {
         setError("Failed to fetch issue. Please try again.");
       }
@@ -186,29 +191,51 @@ export default function Issues() {
     setIsLoadingSimilar(true);
 
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await fetch(`/api/issues/${currentId}/similar`, {
+      let query = '';
+      if (issueType === 'problem') {
+        query = problemStatement.trim();
+      } else {
+        // First get the issue details to construct the query
+        const issueResponse = await fetch(`https://pmt.infinitisoftware.net/issues/${currentId}.json`, {
+          headers: {
+            "X-Redmine-API-Key": "9f2b4ae1c6d3430b8ea597cf2186c8f2e4b57c1e",
+            "Content-Type": "application/json",
+          },
+        });
+        
+        if (issueResponse.ok) {
+          const data = await issueResponse.json();
+          const issue = data.issue;
+          query = `${issue.subject} ${issue.description || ''}`;
+        } else {
+          setError("Failed to fetch issue details for similarity search.");
+          setIsLoadingSimilar(false);
+          return;
+        }
+      }
+      
+      const response = await fetch('http://localhost:8000/ask', {
+        method: 'POST',
         headers: {
-          "Authorization": `Bearer ${token}`,
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ query: query }),
       });
 
       if (response.ok) {
         const similarIssuesData = await response.json();
-        setSimilarIssues(similarIssuesData);
-        setShowSimilar(true);
-        setShowNoMatches(false);
+        if (similarIssuesData && similarIssuesData.length > 0) {
+          setSimilarIssues(similarIssuesData);
+          setShowSimilar(true);
+          setShowNoMatches(false);
+        } else {
+          setShowNoMatches(true);
+          setShowSimilar(false);
+        }
       } else if (response.status === 404) {
         // Show "No matches found" when similar issues endpoint returns 404
         setShowNoMatches(true);
         setShowSimilar(false);
-      } else if (response.status === 401) {
-        // Token expired, redirect to login
-        localStorage.removeItem("isLoggedIn");
-        localStorage.removeItem("authToken");
-        localStorage.removeItem("username");
-        window.location.href = "/login";
       } else {
         setError("Failed to fetch similar issues. Please try again.");
       }

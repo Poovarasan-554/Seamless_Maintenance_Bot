@@ -39,29 +39,16 @@ export default function Home() {
   const [showNoMatches, setShowNoMatches] = useState(false);
   const [showRCAContent, setShowRCAContent] = useState(false);
 
-  // Dummy similar issues data
-  const mockRedmineIssues: SimilarIssue[] = [
-    { id: 101, title: 'Login fails', status: 'Open', priority: 'High', source: 'redmine' },
-    { id: 102, title: 'Session timeout too fast', status: 'In Progress', priority: 'Medium', source: 'redmine' },
-    { id: 103, title: 'Login button not working', status: 'Open', priority: 'High', source: 'redmine' },
-    { id: 104, title: 'Incorrect error on login', status: 'Open', priority: 'Medium', source: 'redmine' },
-    { id: 105, title: 'UI freeze on login', status: 'Resolved', priority: 'Low', source: 'redmine' }
-  ];
-
-  const mockMantisIssues: SimilarIssue[] = [
-    { id: 201, title: 'Login redirect broken', status: 'Open', priority: 'High', source: 'mantis' },
-    { id: 202, title: 'Cannot logout after login', status: 'In Progress', priority: 'Medium', source: 'mantis' },
-    { id: 203, title: 'Login test cases failing', status: 'Open', priority: 'High', source: 'mantis' },
-    { id: 204, title: 'Wrong credentials not handled', status: 'Open', priority: 'Medium', source: 'mantis' },
-    { id: 205, title: 'JS error on login screen', status: 'Resolved', priority: 'Low', source: 'mantis' }
-  ];
+  // Separate similar issues by source for display
+  const redmineIssues = similarIssues.filter(issue => issue.source === 'redmine');
+  const mantisIssues = similarIssues.filter(issue => issue.source === 'mantis');
 
   const validateIssueId = (id: string): boolean => {
     const numericId = parseInt(id);
     return !isNaN(numericId) && numericId > 0 && id.toString() === numericId.toString();
   };
 
-  const handleFetchIssue = () => {
+  const handleFetchIssue = async () => {
     setError('');
     setIssueDetails(null);
     setShowSimilar(false);
@@ -79,35 +66,81 @@ export default function Home() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      const mockData: IssueDetails = {
-        id: parseInt(issueId),
-        title: `Sample Issue #${issueId}: API Integration Problem`,
-        description: 'The REST API endpoints are returning inconsistent response formats, causing parsing errors in the frontend application. This affects user data synchronization and may lead to data loss.',
-        status: 'Open',
-        priority: 'High',
-        assignee: 'John Doe',
-        created: '2024-01-15 10:30:00',
-        updated: '2024-01-20 14:22:00'
-      };
-      
-      setIssueDetails(mockData);
-      setIsLoading(false);
-    }, 1000);
+    try {
+      const response = await fetch(`https://pmt.infinitisoftware.net/issues/${issueId}.json`, {
+        headers: {
+          "X-Redmine-API-Key": "9f2b4ae1c6d3430b8ea597cf2186c8f2e4b57c1e",
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.status === 404) {
+        setError("Issue not found. Please check the issue ID and try again.");
+      } else if (response.ok) {
+        const data = await response.json();
+        const issue = data.issue;
+        // Transform Redmine response to our format
+        const transformedIssue = {
+          id: issue.id,
+          title: issue.subject,
+          description: issue.description || 'No description available',
+          status: issue.status.name,
+          priority: issue.priority.name,
+          assignee: issue.assigned_to ? issue.assigned_to.name : 'Unassigned',
+          created: issue.created_on,
+          updated: issue.updated_on
+        };
+        setIssueDetails(transformedIssue);
+      } else {
+        setError("Failed to fetch issue. Please try again.");
+      }
+    } catch (err) {
+      setError("Network error. Please check your connection and try again.");
+    }
+
+    setIsLoading(false);
   };
 
-  const handleFetchSimilarIssues = () => {
-    // Check for special case: no matches scenario
-    if (parseInt(issueId) === 99999) {
-      setShowNoMatches(true);
-      setShowSimilar(false);
-      setShowRCAContent(false);
-    } else {
-      setShowSimilar(true);
-      setShowNoMatches(false);
-      setSimilarIssues([...mockRedmineIssues, ...mockMantisIssues]);
+  const handleFetchSimilarIssues = async () => {
+    if (!issueDetails) {
+      setError('Please fetch issue details first');
+      return;
     }
+
+    try {
+      // Create query from issue title and description
+      const query = `${issueDetails.title} ${issueDetails.description}`;
+      
+      const response = await fetch('http://localhost:8000/ask', {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query: query }),
+      });
+
+      if (response.ok) {
+        const similarIssuesData = await response.json();
+        if (similarIssuesData && similarIssuesData.length > 0) {
+          setSimilarIssues(similarIssuesData);
+          setShowSimilar(true);
+          setShowNoMatches(false);
+        } else {
+          setShowNoMatches(true);
+          setShowSimilar(false);
+          setShowRCAContent(false);
+        }
+      } else if (response.status === 404) {
+        setShowNoMatches(true);
+        setShowSimilar(false);
+        setShowRCAContent(false);
+      } else {
+        setError("Failed to fetch similar issues. Please try again.");
+      }
+    } catch (err) {
+      setError("Network error. Please check your connection and try again.");
+    }
+    
     setSelectedRedmineIssues([]);
     setSelectedMantisIssues([]);
     setActiveDetailSection(null);
@@ -135,7 +168,7 @@ export default function Home() {
 
   const handleSelectAllRedmine = (checked: boolean) => {
     if (checked) {
-      setSelectedRedmineIssues(mockRedmineIssues.map(issue => issue.id));
+      setSelectedRedmineIssues(redmineIssues.map(issue => issue.id));
     } else {
       setSelectedRedmineIssues([]);
     }
@@ -143,7 +176,7 @@ export default function Home() {
 
   const handleSelectAllMantis = (checked: boolean) => {
     if (checked) {
-      setSelectedMantisIssues(mockMantisIssues.map(issue => issue.id));
+      setSelectedMantisIssues(mantisIssues.map(issue => issue.id));
     } else {
       setSelectedMantisIssues([]);
     }
@@ -404,17 +437,17 @@ export default function Home() {
                     <Checkbox
                       id="select-all-redmine"
                       data-testid="checkbox-select-all-redmine"
-                      checked={selectedRedmineIssues.length === mockRedmineIssues.length && mockRedmineIssues.length > 0}
+                      checked={selectedRedmineIssues.length === redmineIssues.length && redmineIssues.length > 0}
                       onCheckedChange={handleSelectAllRedmine}
                     />
                     <Label htmlFor="select-all-redmine" className="text-sm font-medium text-gray-700">
-                      Select All ({selectedRedmineIssues.length}/{mockRedmineIssues.length})
+                      Select All ({selectedRedmineIssues.length}/{redmineIssues.length})
                     </Label>
                   </div>
                 </div>
                 
                 <div className="space-y-3">
-                  {mockRedmineIssues.map((issue) => (
+                  {redmineIssues.map((issue) => (
                     <div key={`redmine-${issue.id}`} className={`border rounded-lg p-3 transition-colors ${
                       selectedRedmineIssues.includes(issue.id) 
                         ? 'border-blue-300 bg-blue-50' 
@@ -475,17 +508,17 @@ export default function Home() {
                     <Checkbox
                       id="select-all-mantis"
                       data-testid="checkbox-select-all-mantis"
-                      checked={selectedMantisIssues.length === mockMantisIssues.length && mockMantisIssues.length > 0}
+                      checked={selectedMantisIssues.length === mantisIssues.length && mantisIssues.length > 0}
                       onCheckedChange={handleSelectAllMantis}
                     />
                     <Label htmlFor="select-all-mantis" className="text-sm font-medium text-gray-700">
-                      Select All ({selectedMantisIssues.length}/{mockMantisIssues.length})
+                      Select All ({selectedMantisIssues.length}/{mantisIssues.length})
                     </Label>
                   </div>
                 </div>
                 
                 <div className="space-y-3">
-                  {mockMantisIssues.map((issue) => (
+                  {mantisIssues.map((issue) => (
                     <div key={`mantis-${issue.id}`} className={`border rounded-lg p-3 transition-colors ${
                       selectedMantisIssues.includes(issue.id) 
                         ? 'border-blue-300 bg-blue-50' 
