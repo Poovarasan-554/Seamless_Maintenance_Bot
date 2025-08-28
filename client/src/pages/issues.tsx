@@ -60,6 +60,7 @@ export default function Issues() {
   const [activeDetailCard, setActiveDetailCard] = useState<'fix' | 'rca' | 'svn' | null>(null);
   const [showSqlModal, setShowSqlModal] = useState(false);
   const [selectedSqlIssue, setSelectedSqlIssue] = useState<SimilarIssue | null>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<string>('');
 
   const username = localStorage.getItem("username") || "User";
 
@@ -187,6 +188,7 @@ export default function Issues() {
 
     // Reset all future actions when fetching similar issues
     resetAllFutureActions();
+    setAiAnalysis('');
 
     setIsLoadingSimilar(true);
 
@@ -258,6 +260,7 @@ export default function Issues() {
           
           if (transformedIssues.length > 0) {
             setSimilarIssues(transformedIssues);
+            setAiAnalysis(data.reply?.response || '');
             setShowSimilar(true);
             setShowNoMatches(false);
           } else {
@@ -1175,6 +1178,26 @@ export default function Issues() {
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* AI Analysis Section */}
+        {aiAnalysis && showSimilar && !showDetailedView && (
+          <Card className="p-8 mb-8 shadow-xl border-0 bg-gradient-to-br from-white to-purple-50 rounded-2xl" data-testid="card-ai-analysis">
+            <CardContent className="p-0">
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-3 rounded-lg inline-block">
+                  🤖 AI Analysis & Recommendations
+                </h2>
+              </div>
+              <div className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-inner">
+                <div className="prose prose-purple max-w-none">
+                  <div className="whitespace-pre-wrap text-gray-800 leading-relaxed" data-testid="text-ai-analysis">
+                    {aiAnalysis}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}

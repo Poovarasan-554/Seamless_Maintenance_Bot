@@ -38,6 +38,7 @@ export default function Home() {
   const [activeDetailSection, setActiveDetailSection] = useState<'fix' | 'rca' | 'svn' | null>(null);
   const [showNoMatches, setShowNoMatches] = useState(false);
   const [showRCAContent, setShowRCAContent] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<string>('');
 
   // Separate similar issues by source for display
   const redmineIssues = similarIssues.filter(issue => issue.source === 'redmine');
@@ -144,6 +145,7 @@ export default function Home() {
           
           if (transformedIssues.length > 0) {
             setSimilarIssues(transformedIssues);
+            setAiAnalysis(data.reply?.response || '');
             setShowSimilar(true);
             setShowNoMatches(false);
           } else {
@@ -170,6 +172,7 @@ export default function Home() {
     setSelectedRedmineIssues([]);
     setSelectedMantisIssues([]);
     setActiveDetailSection(null);
+    setAiAnalysis('');
   };
 
   const handleFindRCA = () => {
@@ -441,6 +444,26 @@ export default function Home() {
                   Login issue caused by an outdated session token validation library.<br/>
                   Issue is reproducible only on legacy builds.
                 </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* AI Analysis Section */}
+        {aiAnalysis && showSimilar && (
+          <Card className="p-8 mb-8 shadow-lg border-2 border-purple-100 bg-gradient-to-b from-purple-50 to-white" data-testid="card-ai-analysis">
+            <CardContent className="p-0">
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-3 rounded-lg inline-block">
+                  🤖 AI Analysis & Recommendations
+                </h2>
+              </div>
+              <div className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-inner">
+                <div className="prose prose-purple max-w-none">
+                  <div className="whitespace-pre-wrap text-gray-800 leading-relaxed" data-testid="text-ai-analysis">
+                    {aiAnalysis}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
