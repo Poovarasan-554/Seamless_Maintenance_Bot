@@ -1,0 +1,91 @@
+{
+    "reply": {
+        "similiar_redmine_issues": {
+            "redmine": [
+                {
+                    "subject": "0087507: 6E_Regression_Unable to accept the request, the alert \"Please select flight for Group 3 departure 2025-08-16\" is displayed",
+                    "description": "Hi Team,\n\nWe have faced related issue while verifying the scenario in test server. Please check and fix the issue\n\nScenario 1:\n\nRaise a conference request 15groups - GRP19254\nReject group2 and approve remaining groups\naccept the request\n\nIssue : Unable to accept the request, the alert &quot;Please s",
+                    "notes": "\nBacktrace the alert and verified the file userResponse.js.\nIn alert, departure date is 16-08-2025 this date is group4&#39;s return journey.\n\n&nbsp;\n\nChecked the db values, in series_request_request and request_details, group 4 is round trip request. But only onward flight is in request_approved_fli",
+                    "link": "https://pmt.infinitisoftware.net/issues/51118",
+                    "id": 51118,
+                    "similarity": 0.5540059804916382
+                },
+                {
+                    "subject": "0083495: 6E_Regression_While reject the send for review In remarks popup reject the negotiation option displayed",
+                    "description": "Scenario :\n\nLogin as SA - GRP12559\nRaise Adhoc request\nClick send for review\nReject the send for review\nverify the remarks popup\n\nIssue :\nWhile reject the send for review In remarks popup reject the negotiation option displayed in Super admin (compared with RM user)\n",
+                    "notes": "nan",
+                    "link": "https://pmt.infinitisoftware.net/issues/38785",
+                    "id": 38785,
+                    "similarity": 0.5477676391601562
+                },
+                {
+                    "subject": "0087326: A3_Farerequotepolicy_ Negotiation is done for the request but the while try reject the negoation alert is displayed as \" Req",
+                    "description": "**Scenario:**\n\n1. Raised an **adhoc one-way request** (ATH &ndash; LHR) &ndash; **GRP13570**\n\n&nbsp;&nbsp;&nbsp;* Approved the request\n&nbsp;&nbsp;&nbsp;* Current load factor: **53%**\n\n2. Raised another **adhoc one-way request** (ATH &ndash; LHR) &ndash; **GRP13571**\n\n&nbsp;&nbsp;&nbsp;* Approved th",
+                    "notes": "nan",
+                    "link": "https://pmt.infinitisoftware.net/issues/47799",
+                    "id": 47799,
+                    "similarity": 0.5395753383636475
+                },
+                {
+                    "subject": "0079419: 6E_Sprint 10_Acceptance Queue_Unable to block pnr for the request, \"seats have not been blocked\" alert is displayed",
+                    "description": "Raise a series request 3groups - GRP05974\napprove and accept the request\nclose the make payment page\nNow try to block pnr for the request &gt; Extend validity (change payment %) and submit it\n\nIssue :\n\n- Unable to block pnr for the request, &quot;seats have not been blocked&quot; alert is displayed\n",
+                    "notes": "\\n\\n",
+                    "link": "https://pmt.infinitisoftware.net/issues/31389",
+                    "id": 31389,
+                    "similarity": 0.5304113626480103
+                },
+                {
+                    "subject": "0089731: A3_Farerequotepolicy_Regression_View history is not displayed for negotiated id GRP14625",
+                    "description": "\n\n\t\n\t\t\n\t\t\t&nbsp;\n\t\t\tLogin as SA,\n\t\t\t\n\t\t\tScenario:\n\t\t\tRaise a series request with 6 groups - GRP14609\n\t\t\tapprove the request\n\t\t\tpartial modify group 5 and 6 - GRP14614\n\t\t\t&nbsp;- change flight and add new group\n\t\t\twhile approve the modification, reject group 1 and approve remaining\n\t\t\taccept the modi",
+                    "notes": "&nbsp;\n\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Analyse the issue and check the scenarioes for recreate and discussed with QA about the issue\n\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Scenario:\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Raise a series request with 6 groups\n&nbsp;&nbsp;&nbsp;&n",
+                    "link": "https://pmt.infinitisoftware.net/issues/52813",
+                    "id": 52813,
+                    "similarity": 0.5207799077033997
+                }
+            ],
+            "mantis": [
+                {
+                    "subject": "6E_Sprint 12_Export/Import_\"Someone has already taken control of this request ID alert displayed\" alert displayed for series re",
+                    "description": " 6E_Sprint 12_Export/Import_\"Someone has already taken control of this request ID alert displayed\" alert displayed for series request\n",
+                    "notes": "Hi team,\n\nNow, Its fixed and functioning fine in development server, I've attached the SS for your reference.\nRequest Id: GRP01912\nHi team,\n\nScenario:\nVerified in UAT pack,\nLogin as SA/RM,\n\nRaise request as below,\nAdhoc -  send for review - GRP03480\nSeries - new request - GRP03481\nConference - re ne",
+                    "link": "https://bugtracker.atyourprice.net/view.php?id=82417",
+                    "id": 82417,
+                    "similarity": 0.4264584481716156
+                },
+                {
+                    "subject": "6E_Regression_Status \"Request Rejected\" is displayed in resize page and view request details for cancelled groups",
+                    "description": "6E_Regression_Status \"Request Rejected\" is displayed in resize page and view request details for cancelled groups",
+                    "notes": "unable to approve the series request , GRP15081     Sum of payment validity and namelist validity hours must be less than days to departure hours\n\n\nRaise series request with more than 7 groups \n\ncancel groups partially \n\ntry to approve request\nDear team,\nIssue 1: There was a mismatch between the min",
+                    "link": "https://bugtracker.atyourprice.net/view.php?id=84495",
+                    "id": 84495,
+                    "similarity": 0.3756263256072998
+                },
+                {
+                    "subject": "6E_PreLive_ System error alert is displayed, after payment failure in the request",
+                    "description": "6E_PreLive_ System error alert is displayed, after payment failure in the request",
+                    "notes": "nan",
+                    "link": "https://bugtracker.atyourprice.net/view.php?id=88683",
+                    "id": 88683,
+                    "similarity": 0.3711019456386566
+                },
+                {
+                    "subject": "6E_UAT 4740_ remove sum of validity of payment/names list. GRP Policy",
+                    "description": "Dear Ragu,\n\nas discussed, over teams call , Please check internally and advise to remove sum of validity criteria to achieve the 6E GRP Policy.\nscreen short attached.\n\nalso as confirmed on call that Fare validity will be removed from the time lime creation page. as Payment validity will be refer as ",
+                    "notes": "This item was discussed and closed in our daily stand up call. Client have closed the external mantis id and hence requesting you to close the same.",
+                    "link": "https://bugtracker.atyourprice.net/view.php?id=72248",
+                    "id": 72248,
+                    "similarity": 0.347543329000473
+                },
+                {
+                    "subject": "6E_Regression_PNR Migration_Payment timelimit is empty error is displayed, but request has been created for Divide child id",
+                    "description": "6E_Regression_PNR Migration_Payment timelimit is empty error is displayed, but request has been created for Divide child id ",
+                    "notes": "Hi Team,\n\nwe are unable to verify the fix in test server, \"File cannot be read - Upload new file\" alert is displayed while upload pnr migration file. Please check and fix the issue\n\n\nScenario in UAT :\n\nRaise a adhoc request -> GRP05274\napprove and accept the request -> make initial and final payment",
+                    "link": "https://bugtracker.atyourprice.net/view.php?id=85285",
+                    "id": 85285,
+                    "similarity": 0.3410780429840088
+                }
+            ]
+        },
+        "response": "The user is encountering an alert when trying to reject a request, specifically when the \"remarks\" field contains a \"/\" character. This suggests an issue with how the system processes or validates special characters in input fields.\n\n**Probable Root Cause:**\n\nThe most likely root cause is **improper handling or validation of special characters** (specifically the forward slash \"/\") within the \"remarks\" input field. This could manifest in several ways:\n\n1.  **Client-side (JavaScript) Validation Error:** The front-end script might be misinterpreting or failing to escape the \"/\" character before sending the data to the server, or a validation rule prevents its use.\n2.  **Server-side Input Sanitization/Escaping Issue:** The backend code might not be correctly sanitizing or escaping the \"/\" character when receiving the input, leading to an error when processing, storing (e.g., database insert/update), or using it in subsequent operations (e.g., constructing a log message, an XML/JSON payload).\n3.  **Database/Serialization Conflict:** The \"/\" character might conflict with the database's character set, a specific data type, or a serialization format (like JSON or XML) if not properly encoded/decoded.\n4.  **UI Rendering Conflict:** Less likely for an *alert* on submission, but possible if the character causes an immediate rendering failure when the input is re-evaluated.\n\n**Step-by-step Resolution:**\n\n1.  **Replicate the Issue:**\n    *   Log in with a user role that can reject requests.\n    *   Identify an active request that can be rejected.\n    *   Initiate the \"Reject\" action.\n    *   In the \"remarks\" or \"comments\" input field, enter a sample remark that includes the \"/\" character (e.g., \"Incorrect details / Missing information\").\n    *   Attempt to submit the rejection. Note the exact text of the alert message displayed.\n\n2.  **Gather Technical Details:**\n    *   While replicating, open your browser's Developer Tools (F12).\n    *   Check the **Console** tab for any JavaScript errors or warnings.\n    *   Monitor the **Network** tab:\n        *   Identify the API call made when you submit the rejection.\n        *   Examine the **Request Payload** to see how the remarks string is being sent.\n        *   Check the **Response** from the server for any error messages or unexpected status codes (e.g., 4xx or 5xx errors).\n\n3.  **Code Inspection:**\n    *   **Frontend (JavaScript):**\n        *   Review the JavaScript code associated with the \"remarks\" input field and the rejection submission button.\n        *   Look for client-side validation logic that might specifically block or mishandle the \"/\" character.\n        *   Check how the remarks string is processed or encoded before being sent in the API request (e.g., `encodeURIComponent`, JSON stringify).\n    *   **Backend (Server-side):**\n        *   Examine the server-side code (e.g., Java, .NET, Python) for the API endpoint that handles request rejections.\n        *   Investigate how the \"remarks\" parameter is received, validated, and used.\n        *   Look for database interaction code: ensure prepared statements or ORM frameworks are used correctly to handle special characters in strings during insertion/update.\n        *   Check any logging or auditing mechanisms that might be processing the remarks.\n\n4.  **Implement Fix:**\n    *   **Character Escaping/Encoding:** Ensure that the \"/\" character is properly escaped or encoded at the appropriate stage:\n        *   **Client-side:** If the remark is sent as part of a URL parameter, ensure `encodeURIComponent()` is used. If it's part of a JSON payload, standard `JSON.stringify()` should handle it, but verify it's not being double-escaped or improperly unescaped somewhere.\n        *   **Server-side:** When storing the remark in the database, always use **parameterized queries** or an Object-Relational Mapper (ORM) that handles character escaping automatically. This is crucial to prevent both this issue and SQL injection vulnerabilities.\n        *   If the remark is used in other contexts (e.g., generating HTML, XML, or file paths), ensure appropriate escaping functions for that context are applied.\n    *   **Input Validation Adjustment:** If the current validation explicitly disallows \"/\", it should be reviewed. Generally, a \"/\" character is a legitimate part of a remark. If there's a specific reason to disallow it, ensure the error message is clear and user-friendly. Otherwise, update the validation to permit and correctly process it.\n\n**Follow-up Checks:**\n\n1.  **Successful Rejection with \"/\"**: Verify that a request can now be successfully rejected when the remarks field contains one or more \"/\" characters, and no alert is displayed.\n2.  **Other Special Characters:** Test the rejection functionality with remarks containing other common special characters (e.g., `&`, `#`, `%`, `\\`, `'`, `\"`, `<`, `>`) to ensure the fix doesn't introduce new issues or regressions.\n3.  **Data Persistence and Display:**\n    *   After rejecting, verify that the remark (including the \"/\" characters) is correctly stored in the database.\n    *   Check that the remark is displayed accurately and without corruption in all relevant UI views (e.g., \"View Request Details\", \"History\", audit logs).\n4.  **Cross-Browser Compatibility:** Test the fix on different web browsers (Chrome, Firefox, Edge, Safari) to ensure consistent behavior.\n5.  **Regression Testing:** Briefly check other input fields across the application that might handle special characters to ensure no unrelated functionality has been negatively impacted."
+    }
+}

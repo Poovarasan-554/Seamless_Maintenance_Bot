@@ -222,11 +222,48 @@ export default function Issues() {
       });
 
       if (response.ok) {
-        const similarIssuesData = await response.json();
-        if (similarIssuesData && similarIssuesData.length > 0) {
-          setSimilarIssues(similarIssuesData);
-          setShowSimilar(true);
-          setShowNoMatches(false);
+        const data = await response.json();
+        const similarIssuesData = data.reply?.similiar_redmine_issues;
+        
+        if (similarIssuesData) {
+          // Transform the response to match our expected format
+          const transformedIssues = [
+            ...(similarIssuesData.redmine || []).map((issue: any) => ({
+              id: issue.id,
+              title: issue.subject,
+              description: issue.description,
+              status: 'Open', // Default status since not provided
+              priority: 'Medium', // Default priority since not provided
+              assignee: 'Unassigned', // Default assignee since not provided
+              source: 'redmine' as const,
+              contactPerson: '',
+              similarity_percentage: (issue.similarity * 100), // Convert to percentage
+              created: '',
+              updated: ''
+            })),
+            ...(similarIssuesData.mantis || []).map((issue: any) => ({
+              id: issue.id,
+              title: issue.subject,
+              description: issue.description,
+              status: 'Open', // Default status since not provided
+              priority: 'Medium', // Default priority since not provided
+              assignee: 'Unassigned', // Default assignee since not provided
+              source: 'mantis' as const,
+              contactPerson: '',
+              similarity_percentage: (issue.similarity * 100), // Convert to percentage
+              created: '',
+              updated: ''
+            }))
+          ];
+          
+          if (transformedIssues.length > 0) {
+            setSimilarIssues(transformedIssues);
+            setShowSimilar(true);
+            setShowNoMatches(false);
+          } else {
+            setShowNoMatches(true);
+            setShowSimilar(false);
+          }
         } else {
           setShowNoMatches(true);
           setShowSimilar(false);

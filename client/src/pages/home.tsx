@@ -120,11 +120,37 @@ export default function Home() {
       });
 
       if (response.ok) {
-        const similarIssuesData = await response.json();
-        if (similarIssuesData && similarIssuesData.length > 0) {
-          setSimilarIssues(similarIssuesData);
-          setShowSimilar(true);
-          setShowNoMatches(false);
+        const data = await response.json();
+        const similarIssuesData = data.reply?.similiar_redmine_issues;
+        
+        if (similarIssuesData) {
+          // Transform the response to match our expected format
+          const transformedIssues = [
+            ...(similarIssuesData.redmine || []).map((issue: any) => ({
+              id: issue.id,
+              title: issue.subject,
+              status: 'Open', // Default status since not provided
+              priority: 'Medium', // Default priority since not provided
+              source: 'redmine' as const
+            })),
+            ...(similarIssuesData.mantis || []).map((issue: any) => ({
+              id: issue.id,
+              title: issue.subject,
+              status: 'Open', // Default status since not provided
+              priority: 'Medium', // Default priority since not provided
+              source: 'mantis' as const
+            }))
+          ];
+          
+          if (transformedIssues.length > 0) {
+            setSimilarIssues(transformedIssues);
+            setShowSimilar(true);
+            setShowNoMatches(false);
+          } else {
+            setShowNoMatches(true);
+            setShowSimilar(false);
+            setShowRCAContent(false);
+          }
         } else {
           setShowNoMatches(true);
           setShowSimilar(false);
