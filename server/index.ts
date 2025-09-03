@@ -23,7 +23,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 const sql = neon(process.env.DATABASE_URL);
-const db = drizzle(sql);
+const db = drizzle(sql, { schema: { users, issues } });
 
 // Middleware
 app.use(express.json());
