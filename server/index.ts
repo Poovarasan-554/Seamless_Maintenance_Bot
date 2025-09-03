@@ -2,7 +2,7 @@ import express from "express";
 import session from "express-session";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { drizzle } from "drizzle-orm/neon-serverless";
+import { drizzle } from "drizzle-orm/neon-http";
 import { neon } from "@neondatabase/serverless";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -22,7 +22,7 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required");
 }
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = neon(process.env.DATABASE_URL!);
 const db = drizzle(sql, { schema: { users, issues } });
 
 // Middleware
@@ -48,18 +48,22 @@ app.use(session({
 passport.use(new LocalStrategy(
   async (username: string, password: string, done) => {
     try {
-      const user = await db.select().from(users).where(eq(users.username, username)).limit(1);
+      const defaultUser = {
+        id: "1",
+        username: "Poovarasan",
+        password: "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"
+      };
       
-      if (user.length === 0) {
+      if (username !== defaultUser.username) {
         return done(null, false, { message: 'Invalid credentials' });
       }
 
-      const isValidPassword = await bcrypt.compare(password, user[0].password);
+      const isValidPassword = await bcrypt.compare(password, defaultUser.password);
       if (!isValidPassword) {
         return done(null, false, { message: 'Invalid credentials' });
       }
 
-      return done(null, user[0]);
+      return done(null, defaultUser);
     } catch (error) {
       return done(error);
     }
@@ -71,11 +75,10 @@ passport.serializeUser((user: any, done) => {
 });
 
 passport.deserializeUser(async (id: string, done) => {
-  try {
-    const user = await db.select().from(users).where(eq(users.id, id)).limit(1);
-    done(null, user[0] || null);
-  } catch (error) {
-    done(error);
+  if (id === "1") {
+    done(null, { id: "1", username: "Poovarasan" });
+  } else {
+    done(null, null);
   }
 });
 
@@ -193,24 +196,17 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = loginSchema.parse(req.body);
     
-    // For development, create default user if doesn't exist
-    let user = await db.select().from(users).where(eq(users.username, username)).limit(1);
-    
-    if (user.length === 0 && username === "Poovarasan") {
-      // Create default user for development
-      const hashedPassword = await bcrypt.hash("secret", 12);
-      await db.insert(users).values({
-        username: "Poovarasan",
-        password: hashedPassword
-      });
-      user = await db.select().from(users).where(eq(users.username, username)).limit(1);
-    }
+    // For development, use hardcoded credentials
+    const defaultUser = {
+      username: "Poovarasan",
+      password: "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW" // "secret" hashed
+    };
 
-    if (user.length === 0) {
+    if (username !== defaultUser.username) {
       return res.status(401).json({ detail: 'Invalid credentials' });
     }
 
-    const isValidPassword = await bcrypt.compare(password, user[0].password);
+    const isValidPassword = await bcrypt.compare(password, defaultUser.password);
     if (!isValidPassword) {
       return res.status(401).json({ detail: 'Invalid credentials' });
     }
