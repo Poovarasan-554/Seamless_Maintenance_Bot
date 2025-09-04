@@ -491,18 +491,8 @@ export default function Issues() {
                 </Badge>
               </div>
               
-              {/* Additional details for similar issues */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-100">
-                <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                    <User className="w-3 h-3" />
-                    Assignee
-                  </p>
-                  <p className="text-sm text-gray-700" data-testid={`text-assignee-${issue.id}`}>
-                    {issue.assignee || 'Unassigned'}
-                  </p>
-                </div>
-                
+              {/* Additional details for similar issues - hiding Assignee as requested */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100">
                 {issue.created && (
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
