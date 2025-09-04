@@ -294,27 +294,27 @@ export default function Issues() {
               id: issue.id,
               title: issue.subject,
               description: issue.description,
-              status: 'Open', // Default status since not provided
-              priority: 'Medium', // Default priority since not provided
-              assignee: 'Unassigned', // Default assignee since not provided
+              status: issue.status?.name || 'Open',
+              priority: issue.priority?.name || 'Medium',
+              assignee: issue.assigned_to?.name || 'Unassigned',
               source: 'redmine' as const,
-              contactPerson: '',
+              contactPerson: issue.assigned_to?.name || '',
               similarity_percentage: (issue.similarity * 100), // Convert to percentage
-              created: '',
-              updated: ''
+              created: issue.created_on || '',
+              updated: issue.updated_on || ''
             })),
             ...(similarIssuesData.mantis || []).map((issue: any) => ({
               id: issue.id,
-              title: issue.subject,
+              title: issue.summary || issue.subject,
               description: issue.description,
-              status: 'Open', // Default status since not provided
-              priority: 'Medium', // Default priority since not provided
-              assignee: 'Unassigned', // Default assignee since not provided
+              status: issue.status?.name || 'Open',
+              priority: issue.priority?.name || 'Medium',
+              assignee: issue.handler?.name || 'Unassigned',
               source: 'mantis' as const,
-              contactPerson: '',
+              contactPerson: issue.handler?.name || '',
               similarity_percentage: (issue.similarity * 100), // Convert to percentage
-              created: '',
-              updated: ''
+              created: issue.created_at || '',
+              updated: issue.updated_at || ''
             }))
           ];
           
@@ -489,6 +489,43 @@ export default function Issues() {
                 <Badge variant={getPriorityBadgeVariant(issue.priority)} data-testid={`badge-priority-${issue.id}`}>
                   {issue.priority}
                 </Badge>
+              </div>
+              
+              {/* Additional details for similar issues */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 pt-3 border-t border-gray-100">
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    Assignee
+                  </p>
+                  <p className="text-sm text-gray-700" data-testid={`text-assignee-${issue.id}`}>
+                    {issue.assignee || 'Unassigned'}
+                  </p>
+                </div>
+                
+                {issue.created && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      Created
+                    </p>
+                    <p className="text-sm text-gray-700" data-testid={`text-created-${issue.id}`}>
+                      {new Date(issue.created).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+                
+                {issue.updated && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      Updated
+                    </p>
+                    <p className="text-sm text-gray-700" data-testid={`text-updated-${issue.id}`}>
+                      {new Date(issue.updated).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
             <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full" data-testid={`similarity-${issue.id}`}>
