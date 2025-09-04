@@ -68,10 +68,12 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`http://3.108.104.136/redmineData.php?id=${issueId}`, {
+      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/get_issue', {
+        method: 'POST',
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ "issue_id": issueId })
       });
 
       if (response.status === 404) {

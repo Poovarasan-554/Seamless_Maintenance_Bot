@@ -128,10 +128,12 @@ export default function Issues() {
     resetAllFutureActions();
 
     try {
-      const response = await fetch(`http://3.108.104.136/redmineData.php?id=${currentId}`, {
+      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/get_issue', {
+        method: 'POST',
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ "issue_id": currentId })
       });
 
       if (response.status === 404) {
@@ -198,10 +200,12 @@ export default function Issues() {
         query = problemStatement.trim();
       } else {
         // First get the issue details to construct the query
-        const issueResponse = await fetch(`http://3.108.104.136/redmineData.php?id=${currentId}`, {
+        const issueResponse = await fetch('https://maintenancebot-ai.infinitisoftware.net/get_issue', {
+          method: 'POST',
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({ "issue_id": currentId })
         });
         
         if (issueResponse.ok) {
