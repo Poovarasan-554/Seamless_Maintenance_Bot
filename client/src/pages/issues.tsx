@@ -847,7 +847,7 @@ export default function Issues() {
                   </Badge>
                   <a
                     href={selectedIssueDetails.source === 'redmine' 
-                      ? `https://redmine.company.com/issues/${selectedIssueDetails.id}`
+                      ? `https://pmt.infinitisoftware.net/issues/${selectedIssueDetails.id}`
                       : `https://mantis.company.com/view.php?id=${selectedIssueDetails.id}`
                     }
                     target="_blank"
