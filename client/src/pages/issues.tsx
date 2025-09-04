@@ -220,7 +220,7 @@ export default function Issues() {
         }
       }
       
-      const response = await fetch('http://localhost:8000/ask', {
+      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/ask', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
