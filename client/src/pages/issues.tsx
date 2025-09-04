@@ -129,7 +129,12 @@ export default function Issues() {
     resetAllFutureActions();
 
     try {
-      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/get_issue', {
+      // Use different endpoints based on issue type
+      const endpoint = issueType === 'mantis' 
+        ? 'https://maintenancebot-ai.infinitisoftware.net/get_mantis_issue'
+        : 'https://maintenancebot-ai.infinitisoftware.net/get_issue';
+        
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -201,7 +206,11 @@ export default function Issues() {
         query = problemStatement.trim();
       } else {
         // First get the issue details to construct the query
-        const issueResponse = await fetch('https://maintenancebot-ai.infinitisoftware.net/get_issue', {
+        const endpoint = issueType === 'mantis' 
+          ? 'https://maintenancebot-ai.infinitisoftware.net/get_mantis_issue'
+          : 'https://maintenancebot-ai.infinitisoftware.net/get_issue';
+        
+        const issueResponse = await fetch(endpoint, {
           method: 'POST',
           headers: {
             "Content-Type": "application/json",
