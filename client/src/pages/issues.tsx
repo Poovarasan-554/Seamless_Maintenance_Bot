@@ -128,7 +128,7 @@ export default function Issues() {
     resetAllFutureActions();
 
     try {
-      const response = await fetch(`http://localhost/support-ticket-analyzer/redmineData.php?id=${currentId}`, {
+      const response = await fetch(`http://3.108.104.136/redmineData.php?id=${currentId}`, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -198,7 +198,7 @@ export default function Issues() {
         query = problemStatement.trim();
       } else {
         // First get the issue details to construct the query
-        const issueResponse = await fetch(`http://localhost/support-ticket-analyzer/redmineData.php?id=${currentId}`, {
+        const issueResponse = await fetch(`http://3.108.104.136/redmineData.php?id=${currentId}`, {
           headers: {
             "Content-Type": "application/json",
           },
