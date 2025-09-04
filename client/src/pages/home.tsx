@@ -68,7 +68,7 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`http://localhost/support-ticket-analyzer/redmineData.php?id=${issueId}`, {
+      const response = await fetch(`http://3.108.104.136/redmineData.php?id=${issueId}`, {
         headers: {
           "Content-Type": "application/json",
         },
