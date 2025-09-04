@@ -972,7 +972,7 @@ export default function Issues() {
                       Assignee
                     </h4>
                     <p className="text-gray-900" data-testid="text-detailed-assignee">
-                      {selectedIssueDetails.assignee}
+                      {selectedIssueDetails.assignee || 'Unassigned'}
                     </p>
                   </div>
                   
@@ -1014,7 +1014,9 @@ export default function Issues() {
                       Created
                     </h4>
                     <p className="text-gray-700 text-sm" data-testid="text-detailed-created">
-                      {selectedIssueDetails.created}
+                      {selectedIssueDetails.created ? 
+                        (new Date(selectedIssueDetails.created).toLocaleDateString() + ' ' + new Date(selectedIssueDetails.created).toLocaleTimeString()) 
+                        : 'Not available'}
                     </p>
                   </div>
                   
@@ -1024,7 +1026,9 @@ export default function Issues() {
                       Last Updated
                     </h4>
                     <p className="text-gray-700 text-sm" data-testid="text-detailed-updated">
-                      {selectedIssueDetails.updated}
+                      {selectedIssueDetails.updated ? 
+                        (new Date(selectedIssueDetails.updated).toLocaleDateString() + ' ' + new Date(selectedIssueDetails.updated).toLocaleTimeString()) 
+                        : 'Not available'}
                     </p>
                   </div>
                 </div>
