@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertCircle, Search, Loader2, LogOut, User, Calendar, Clock, ArrowLeft, Eye, Code, GitBranch, X, CheckCircle, Edit, ExternalLink } from "lucide-react";
+import { stripHtmlTags } from "@/lib/utils";
 
 interface IssueDetails {
   id: number;
@@ -423,7 +424,7 @@ export default function Issues() {
               </h4>
               {issue.description && (
                 <p className="text-sm text-gray-600 leading-relaxed" data-testid={`text-issue-description-${issue.id}`}>
-                  {issue.description}
+                  {stripHtmlTags(issue.description)}
                 </p>
               )}
               <div className="flex items-center gap-2">
@@ -678,7 +679,7 @@ export default function Issues() {
                 </div>
                 
                 <p className="text-gray-700" data-testid="text-issue-description">
-                  {issueDetails.description}
+                  {stripHtmlTags(issueDetails.description)}
                 </p>
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -876,7 +877,7 @@ export default function Issues() {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
                 <p className="text-gray-700 leading-relaxed" data-testid="text-detailed-description">
-                  {selectedIssueDetails.description}
+                  {stripHtmlTags(selectedIssueDetails.description || '')}
                 </p>
               </div>
 
@@ -1280,7 +1281,7 @@ export default function Issues() {
                     <h3 className="font-semibold text-blue-900 mb-2">Issue Summary</h3>
                     <p className="text-blue-800">{selectedSqlIssue.title}</p>
                     {selectedSqlIssue.description && (
-                      <p className="text-blue-700 text-sm mt-2">{selectedSqlIssue.description}</p>
+                      <p className="text-blue-700 text-sm mt-2">{stripHtmlTags(selectedSqlIssue.description)}</p>
                     )}
                   </div>
                   

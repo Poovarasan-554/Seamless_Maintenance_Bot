@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertCircle, Search, Loader2 } from "lucide-react";
+import { stripHtmlTags } from "@/lib/utils";
 
 interface IssueDetails {
   id: number;
@@ -358,7 +359,7 @@ export default function Home() {
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-2">Description</h4>
                     <p className="text-gray-700 leading-relaxed" data-testid="text-issue-description">
-                      {issueDetails.description}
+                      {stripHtmlTags(issueDetails.description)}
                     </p>
                   </div>
                 </div>
