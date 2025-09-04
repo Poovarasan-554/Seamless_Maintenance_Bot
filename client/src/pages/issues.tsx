@@ -146,19 +146,46 @@ export default function Issues() {
         setError("Issue not found. Please check the issue ID and try again.");
       } else if (response.ok) {
         const data = await response.json();
-        const issue = data.issue;
-        // Transform Redmine response to our format
-        const transformedIssue = {
-          id: issue.id,
-          title: issue.subject,
-          description: issue.description || 'No description available',
-          status: issue.status.name,
-          priority: issue.priority.name,
-          assignee: issue.assigned_to ? issue.assigned_to.name : 'Unassigned',
-          created: issue.created_on,
-          updated: issue.updated_on
-        };
-        setIssueDetails(transformedIssue);
+        let issue;
+        let transformedIssue;
+        
+        if (issueType === 'mantis') {
+          // Handle Mantis response structure
+          issue = data.mantis_issue?.issues?.[0];
+          if (issue) {
+            transformedIssue = {
+              id: issue.id,
+              title: issue.summary,
+              description: issue.description || 'No description available',
+              status: issue.status.name,
+              priority: issue.priority.name,
+              assignee: issue.handler ? issue.handler.name : 'Unassigned',
+              created: issue.created_at,
+              updated: issue.updated_at
+            };
+          }
+        } else {
+          // Handle Redmine response structure
+          issue = data.issue;
+          if (issue) {
+            transformedIssue = {
+              id: issue.id,
+              title: issue.subject,
+              description: issue.description || 'No description available',
+              status: issue.status.name,
+              priority: issue.priority.name,
+              assignee: issue.assigned_to ? issue.assigned_to.name : 'Unassigned',
+              created: issue.created_on,
+              updated: issue.updated_on
+            };
+          }
+        }
+        
+        if (transformedIssue) {
+          setIssueDetails(transformedIssue);
+        } else {
+          setError("Invalid response format received.");
+        }
       } else {
         setError("Failed to fetch issue. Please try again.");
       }
@@ -220,8 +247,27 @@ export default function Issues() {
         
         if (issueResponse.ok) {
           const data = await issueResponse.json();
-          const issue = data.issue;
-          query = `${issue.subject} ${issue.description || ''}`;
+          let issue;
+          
+          if (issueType === 'mantis') {
+            // Handle Mantis response structure
+            issue = data.mantis_issue?.issues?.[0];
+            if (issue) {
+              query = `${issue.summary} ${issue.description || ''}`;
+            }
+          } else {
+            // Handle Redmine response structure
+            issue = data.issue;
+            if (issue) {
+              query = `${issue.subject} ${issue.description || ''}`;
+            }
+          }
+          
+          if (!query) {
+            setError("Failed to extract issue details for similarity search.");
+            setIsLoadingSimilar(false);
+            return;
+          }
         } else {
           setError("Failed to fetch issue details for similarity search.");
           setIsLoadingSimilar(false);

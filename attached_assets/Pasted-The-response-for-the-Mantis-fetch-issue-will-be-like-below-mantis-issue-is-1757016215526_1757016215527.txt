@@ -1,0 +1,360 @@
+The response for the Mantis fetch issue will be like below:
+
+{
+    "mantis_issue": {
+        "issues": [
+            {
+                "id": 42859,
+                "summary": "WPM_GA_P2_S1_L1_Report_Destination showing wrong for round trip request in front end report – Order Id: 1638",
+                "description": "Report_Destination showing wrong for round trip request in front end report – Order Id: 1638\r\n\r\nNote: Verified in testing server.",
+                "steps_to_reproduce": "Login as rajeshkumar@mailinator.com / Infi@123\r\n\r\nRaise an air WPM Warrant Round trip booking > Sector MAA - MYY > Select 1stop flight for onward and 2stop flight for return > Send for Approval\r\n\r\nApprover approved and request ticketed successfully.\r\n\r\nNow verify this ticketed booking in front end report.\r\n\r\nIssue: For this request, Destination showing wrong ",
+                "additional_information": "Note: Order Id: 1638 (Kindly Verify this booking)\r\n\r\nAttached screenshot for your reference.",
+                "project": {
+                    "id": 51,
+                    "name": "Malaysian Airlines - Agencydirect"
+                },
+                "category": {
+                    "id": 3,
+                    "name": "Functionality"
+                },
+                "reporter": {
+                    "id": 167,
+                    "name": "Poovarasan"
+                },
+                "handler": {
+                    "id": 129,
+                    "name": "thomas"
+                },
+                "status": {
+                    "id": 43,
+                    "name": "Sclosed",
+                    "label": "Sclosed",
+                    "color": "#75507b"
+                },
+                "resolution": {
+                    "id": 10,
+                    "name": "open",
+                    "label": "open"
+                },
+                "view_state": {
+                    "id": 10,
+                    "name": "public",
+                    "label": "public"
+                },
+                "priority": {
+                    "id": 30,
+                    "name": "normal",
+                    "label": "normal"
+                },
+                "severity": {
+                    "id": 50,
+                    "name": "minor",
+                    "label": "minor"
+                },
+                "reproducibility": {
+                    "id": 50,
+                    "name": "random",
+                    "label": "random"
+                },
+                "sticky": false,
+                "created_at": "2021-05-12T13:57:57+05:30",
+                "updated_at": "2021-08-23T14:49:45+05:30",
+                "attachments": [
+                    {
+                        "id": 60469,
+                        "reporter": {
+                            "id": 167,
+                            "name": "Poovarasan"
+                        },
+                        "created_at": "2021-05-12T13:57:57+05:30",
+                        "filename": "26.png",
+                        "size": 257982,
+                        "content_type": "image/png; charset=binary"
+                    }
+                ],
+                "notes": [
+                    {
+                        "id": 47359,
+                        "reporter": {
+                            "id": 141,
+                            "name": "mohan.babu"
+                        },
+                        "text": "fixed and closed",
+                        "view_state": {
+                            "id": 10,
+                            "name": "public",
+                            "label": "public"
+                        },
+                        "type": "note",
+                        "created_at": "2021-08-23T14:49:41+05:30",
+                        "updated_at": "2021-08-23T14:49:41+05:30"
+                    }
+                ],
+                "custom_fields": [
+                    {
+                        "field": {
+                            "id": 7,
+                            "name": "Notes - Reassign"
+                        },
+                        "value": ""
+                    },
+                    {
+                        "field": {
+                            "id": 12,
+                            "name": "Root cause"
+                        },
+                        "value": ""
+                    }
+                ],
+                "history": [
+                    {
+                        "created_at": "2021-05-12T13:57:57+05:30",
+                        "user": {
+                            "id": 167,
+                            "name": "Poovarasan"
+                        },
+                        "type": {
+                            "id": 1,
+                            "name": "issue-new"
+                        },
+                        "message": "New Issue"
+                    },
+                    {
+                        "created_at": "2021-05-12T13:57:57+05:30",
+                        "user": {
+                            "id": 167,
+                            "name": "Poovarasan"
+                        },
+                        "field": {
+                            "name": "status",
+                            "label": "Status"
+                        },
+                        "type": {
+                            "id": 0,
+                            "name": "field-updated"
+                        },
+                        "old_value": {
+                            "id": 10,
+                            "name": "new",
+                            "label": "new",
+                            "color": "#fcbdbd"
+                        },
+                        "new_value": {
+                            "id": 50,
+                            "name": "assigned",
+                            "label": "assigned",
+                            "color": "#c2dfff"
+                        },
+                        "message": "Status",
+                        "change": "new => assigned"
+                    },
+                    {
+                        "created_at": "2021-05-12T13:57:57+05:30",
+                        "user": {
+                            "id": 167,
+                            "name": "Poovarasan"
+                        },
+                        "field": {
+                            "name": "handler",
+                            "label": "Assigned To"
+                        },
+                        "type": {
+                            "id": 0,
+                            "name": "field-updated"
+                        },
+                        "old_value": {
+                            "id": 0
+                        },
+                        "new_value": {
+                            "id": 76,
+                            "name": "jagannathan.m"
+                        },
+                        "message": "Assigned To",
+                        "change": " => jagannathan.m"
+                    },
+                    {
+                        "created_at": "2021-05-12T13:57:57+05:30",
+                        "user": {
+                            "id": 167,
+                            "name": "Poovarasan"
+                        },
+                        "type": {
+                            "id": 9,
+                            "name": "file-added"
+                        },
+                        "file": {
+                            "id": 60469,
+                            "filename": "26.png"
+                        },
+                        "message": "File Added: 26.png"
+                    },
+                    {
+                        "created_at": "2021-05-12T23:08:31+05:30",
+                        "user": {
+                            "id": 129,
+                            "name": "thomas"
+                        },
+                        "field": {
+                            "name": "status",
+                            "label": "Status"
+                        },
+                        "type": {
+                            "id": 0,
+                            "name": "field-updated"
+                        },
+                        "old_value": {
+                            "id": 50,
+                            "name": "assigned",
+                            "label": "assigned",
+                            "color": "#c2dfff"
+                        },
+                        "new_value": {
+                            "id": 41,
+                            "name": "Lfixed",
+                            "label": "Lfixed",
+                            "color": "#f57900"
+                        },
+                        "message": "Status",
+                        "change": "assigned => Lfixed"
+                    },
+                    {
+                        "created_at": "2021-05-12T23:11:46+05:30",
+                        "user": {
+                            "id": 129,
+                            "name": "thomas"
+                        },
+                        "field": {
+                            "name": "handler",
+                            "label": "Assigned To"
+                        },
+                        "type": {
+                            "id": 0,
+                            "name": "field-updated"
+                        },
+                        "old_value": {
+                            "id": 76,
+                            "name": "jagannathan.m"
+                        },
+                        "new_value": {
+                            "id": 129,
+                            "name": "thomas"
+                        },
+                        "message": "Assigned To",
+                        "change": "jagannathan.m => thomas"
+                    },
+                    {
+                        "created_at": "2021-06-08T17:41:57+05:30",
+                        "user": {
+                            "id": 129,
+                            "name": "thomas"
+                        },
+                        "field": {
+                            "name": "status",
+                            "label": "Status"
+                        },
+                        "type": {
+                            "id": 0,
+                            "name": "field-updated"
+                        },
+                        "old_value": {
+                            "id": 41,
+                            "name": "Lfixed",
+                            "label": "Lfixed",
+                            "color": "#f57900"
+                        },
+                        "new_value": {
+                            "id": 42,
+                            "name": "Sresolved",
+                            "label": "Sresolved",
+                            "color": "#8ae234"
+                        },
+                        "message": "Status",
+                        "change": "Lfixed => Sresolved"
+                    },
+                    {
+                        "created_at": "2021-08-23T14:49:41+05:30",
+                        "user": {
+                            "id": 141,
+                            "name": "mohan.babu"
+                        },
+                        "type": {
+                            "id": 2,
+                            "name": "note-added"
+                        },
+                        "note": {
+                            "id": 47359
+                        },
+                        "message": "Note Added: 0047359"
+                    },
+                    {
+                        "created_at": "2021-08-23T14:49:45+05:30",
+                        "user": {
+                            "id": 141,
+                            "name": "mohan.babu"
+                        },
+                        "field": {
+                            "name": "status",
+                            "label": "Status"
+                        },
+                        "type": {
+                            "id": 0,
+                            "name": "field-updated"
+                        },
+                        "old_value": {
+                            "id": 42,
+                            "name": "Sresolved",
+                            "label": "Sresolved",
+                            "color": "#8ae234"
+                        },
+                        "new_value": {
+                            "id": 43,
+                            "name": "Sclosed",
+                            "label": "Sclosed",
+                            "color": "#75507b"
+                        },
+                        "message": "Status",
+                        "change": "Sresolved => Sclosed"
+                    },
+                    {
+                        "created_at": "2021-08-23T14:49:45+05:30",
+                        "user": {
+                            "id": 141,
+                            "name": "mohan.babu"
+                        },
+                        "type": {
+                            "id": 6,
+                            "name": "issue-description-updated"
+                        },
+                        "message": "Description Updated"
+                    },
+                    {
+                        "created_at": "2021-08-23T14:49:45+05:30",
+                        "user": {
+                            "id": 141,
+                            "name": "mohan.babu"
+                        },
+                        "type": {
+                            "id": 8,
+                            "name": "issue-steps-to-reproduce-updated"
+                        },
+                        "message": "Steps to Reproduce Updated"
+                    },
+                    {
+                        "created_at": "2021-08-23T14:49:45+05:30",
+                        "user": {
+                            "id": 141,
+                            "name": "mohan.babu"
+                        },
+                        "type": {
+                            "id": 7,
+                            "name": "issue-additional-info-updated"
+                        },
+                        "message": "Additional Information Updated"
+                    }
+                ]
+            }
+        ]
+    }
+}
+
+Based on this, kindly show the details after clicking on the Fetch Issue button.
