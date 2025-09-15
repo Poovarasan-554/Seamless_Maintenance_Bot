@@ -554,6 +554,16 @@ export default function Issues() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4">
+      {/* Center Screen Loader Overlay */}
+      {isLoadingSimilar && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="loader-overlay">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center space-y-4 shadow-2xl">
+            <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+            <p className="text-gray-700 font-medium">Please wait while processing the request...</p>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-6xl mx-auto">
         {/* Header with logout */}
         <div className="flex justify-between items-center mb-8">
@@ -724,20 +734,11 @@ export default function Issues() {
                     <Button
                       data-testid="button-fetch-similar-from-problem"
                       onClick={handleFetchSimilarIssues}
-                      disabled={isLoadingSimilar || !problemStatement.trim()}
+                      disabled={!problemStatement.trim()}
                       className="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
-                      {isLoadingSimilar ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Searching...
-                        </>
-                      ) : (
-                        <>
-                          <Search className="w-4 h-4 mr-2" />
-                          Fetch Similar Issues
-                        </>
-                      )}
+                      <Search className="w-4 h-4 mr-2" />
+                      Fetch Similar Issues
                     </Button>
                   </div>
                 </div>
@@ -791,20 +792,10 @@ export default function Issues() {
                   <Button
                     data-testid="button-fetch-similar"
                     onClick={handleFetchSimilarIssues}
-                    disabled={isLoadingSimilar}
-                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
                   >
-                    {isLoadingSimilar ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Searching...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="w-4 h-4 mr-2" />
-                        Fetch Similar Issues
-                      </>
-                    )}
+                    <Search className="w-4 h-4 mr-2" />
+                    Fetch Similar Issues
                   </Button>
                 </div>
               </div>

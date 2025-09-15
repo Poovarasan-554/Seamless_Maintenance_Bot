@@ -40,6 +40,7 @@ export default function Home() {
   const [showNoMatches, setShowNoMatches] = useState(false);
   const [showRCAContent, setShowRCAContent] = useState(false);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
+  const [isLoadingSimilar, setIsLoadingSimilar] = useState(false);
 
   // Separate similar issues by source for display
   const redmineIssues = similarIssues.filter(issue => issue.source === 'redmine');
@@ -111,6 +112,8 @@ export default function Home() {
       return;
     }
 
+    setIsLoadingSimilar(true);
+
     try {
       // Create query from issue title and description
       const query = `${issueDetails.title} ${issueDetails.description}`;
@@ -176,6 +179,7 @@ export default function Home() {
     setSelectedMantisIssues([]);
     setActiveDetailSection(null);
     setAiAnalysis('');
+    setIsLoadingSimilar(false);
   };
 
   const handleFindRCA = () => {
@@ -267,6 +271,16 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-8 px-4">
+      {/* Center Screen Loader Overlay */}
+      {isLoadingSimilar && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="loader-overlay">
+          <div className="bg-white rounded-lg p-8 flex flex-col items-center space-y-4 shadow-2xl">
+            <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+            <p className="text-gray-700 font-medium">Please wait while processing the request...</p>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-6xl mx-auto">
         {/* Enhanced Header */}
         <div className="text-center mb-12">
