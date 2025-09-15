@@ -69,7 +69,7 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/get_issue', {
+      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/api/get_issue', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -115,7 +115,7 @@ export default function Home() {
       // Create query from issue title and description
       const query = `${issueDetails.title} ${issueDetails.description}`;
       
-      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/ask', {
+      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/api/ask', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
