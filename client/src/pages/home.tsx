@@ -70,10 +70,12 @@ export default function Home() {
     setIsLoading(true);
 
     try {
+      const authToken = localStorage.getItem("authToken");
       const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/api/get_issue', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
+          ...(authToken && { "Authorization": `Bearer ${authToken}` })
         },
         body: JSON.stringify({ "issue_id": issueId })
       });
@@ -118,10 +120,12 @@ export default function Home() {
       // Create query from issue title and description
       const query = `${issueDetails.title} ${issueDetails.description}`;
       
+      const authToken = localStorage.getItem("authToken");
       const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/api/ask', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
+          ...(authToken && { "Authorization": `Bearer ${authToken}` })
         },
         body: JSON.stringify({ query: query }),
       });

@@ -134,10 +134,12 @@ export default function Issues() {
         ? 'https://maintenancebot-ai.infinitisoftware.net/api/ask'
         : 'https://maintenancebot-ai.infinitisoftware.net/api/get_issue';
         
+      const authToken = localStorage.getItem("authToken");
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
+          ...(authToken && { "Authorization": `Bearer ${authToken}` })
         },
         body: JSON.stringify({ "issue_id": currentId })
       });
@@ -237,10 +239,12 @@ export default function Issues() {
           ? 'https://maintenancebot-ai.infinitisoftware.net/api/ask'
           : 'https://maintenancebot-ai.infinitisoftware.net/api/get_issue';
         
+        const authToken = localStorage.getItem("authToken");
         const issueResponse = await fetch(endpoint, {
           method: 'POST',
           headers: {
             "Content-Type": "application/json",
+            ...(authToken && { "Authorization": `Bearer ${authToken}` })
           },
           body: JSON.stringify({ "issue_id": currentId })
         });
@@ -275,10 +279,12 @@ export default function Issues() {
         }
       }
       
+      const authToken = localStorage.getItem("authToken");
       const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/api/ask', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
+          ...(authToken && { "Authorization": `Bearer ${authToken}` })
         },
         body: JSON.stringify({ query: query }),
       });
