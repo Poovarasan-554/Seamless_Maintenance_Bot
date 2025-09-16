@@ -27,8 +27,8 @@ export default function Login() {
     setError("");
 
     try {
-      // Call the FastAPI backend
-      const response = await fetch("https://maintenancebot-ai.infinitisoftware.net/api/auth/login", {
+      // Call the local API backend
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
