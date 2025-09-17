@@ -286,16 +286,21 @@ async function setupServer() {
     
     // Allow all hosts for Replit dynamic hostnames
     process.env.DANGEROUSLY_DISABLE_HOST_CHECK = 'true';
+    process.env.HOST = '0.0.0.0';
     
-    // Create Vite server in middleware mode with host configuration
+    // Create Vite server in middleware mode with comprehensive host configuration
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
         hmr: {
-          port: 24678
+          port: 24678,
+          host: '0.0.0.0'
         },
         host: '0.0.0.0',
-        allowedHosts: 'all'
+        allowedHosts: true
+      },
+      define: {
+        __DEV__: true
       },
       appType: 'spa'
     });
