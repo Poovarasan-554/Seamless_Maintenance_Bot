@@ -284,9 +284,19 @@ async function setupServer() {
     process.env.CHOKIDAR_USEPOLLING = '1';
     process.env.CHOKIDAR_INTERVAL = '300';
     
-    // Create Vite server in middleware mode
+    // Allow all hosts for Replit dynamic hostnames
+    process.env.DANGEROUSLY_DISABLE_HOST_CHECK = 'true';
+    
+    // Create Vite server in middleware mode with host configuration
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { 
+        middlewareMode: true,
+        hmr: {
+          port: 24678
+        },
+        host: '0.0.0.0',
+        allowedHosts: 'all'
+      },
       appType: 'spa'
     });
     
