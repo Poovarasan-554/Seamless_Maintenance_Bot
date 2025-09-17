@@ -147,7 +147,9 @@ export default function Issues() {
 
     try {
       // Use different endpoints based on issue type
-      const endpoint = '/api/issues/' + currentId;
+      const endpoint = issueType === 'mantis' 
+        ? 'https://maintenancebot-ai.infinitisoftware.net/api/get_mantis_issue'
+        : 'https://maintenancebot-ai.infinitisoftware.net/api/get_issue';
         
       const authToken = localStorage.getItem("authToken");
       const response = await fetch(endpoint, {
@@ -285,7 +287,9 @@ export default function Issues() {
         query = problemStatement.trim();
       } else {
         // First get the issue details to construct the query
-        const endpoint = '/api/issues/' + currentId;
+        const endpoint = issueType === 'mantis' 
+          ? 'https://maintenancebot-ai.infinitisoftware.net/api/get_mantis_issue'
+          : 'https://maintenancebot-ai.infinitisoftware.net/api/get_issue';
         
         const authToken = localStorage.getItem("authToken");
         const issueResponse = await fetch(endpoint, {
@@ -328,7 +332,7 @@ export default function Issues() {
       }
       
       const authToken = localStorage.getItem("authToken");
-      const response = await fetch('/api/issues/' + currentId + '/similar', {
+      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/api/ask', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -514,7 +518,7 @@ export default function Issues() {
       
       try {
         const authToken = localStorage.getItem("authToken");
-        const response = await fetch(`/api/issues/${issue.id}/mysql`, {
+        const response = await fetch(`https://maintenancebot-ai.infinitisoftware.net/api/mysql_query_index/${issue.id}`, {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",

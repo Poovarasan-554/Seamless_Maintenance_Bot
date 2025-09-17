@@ -71,7 +71,7 @@ export default function Home() {
 
     try {
       const authToken = localStorage.getItem("authToken");
-      const response = await fetch('/api/issues/' + issueId, {
+      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/api/get_issue', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -121,7 +121,7 @@ export default function Home() {
       const query = `${issueDetails.title} ${issueDetails.description}`;
       
       const authToken = localStorage.getItem("authToken");
-      const response = await fetch('/api/issues/' + issueDetails.id + '/similar', {
+      const response = await fetch('https://maintenancebot-ai.infinitisoftware.net/api/ask', {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
