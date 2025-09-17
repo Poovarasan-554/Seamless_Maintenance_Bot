@@ -131,7 +131,7 @@ export default function Issues() {
     try {
       // Use different endpoints based on issue type
       const endpoint = issueType === 'mantis' 
-        ? 'https://maintenancebot-ai.infinitisoftware.net/api/ask'
+        ? 'https://maintenancebot-ai.infinitisoftware.net/api/get_mantis_issue'
         : 'https://maintenancebot-ai.infinitisoftware.net/api/get_issue';
         
       const authToken = localStorage.getItem("authToken");
@@ -236,7 +236,7 @@ export default function Issues() {
       } else {
         // First get the issue details to construct the query
         const endpoint = issueType === 'mantis' 
-          ? 'https://maintenancebot-ai.infinitisoftware.net/api/ask'
+          ? 'https://maintenancebot-ai.infinitisoftware.net/api/get_mantis_issue'
           : 'https://maintenancebot-ai.infinitisoftware.net/api/get_issue';
         
         const authToken = localStorage.getItem("authToken");
