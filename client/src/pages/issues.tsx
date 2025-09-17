@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -62,6 +63,8 @@ export default function Issues() {
   const [showSqlModal, setShowSqlModal] = useState(false);
   const [selectedSqlIssue, setSelectedSqlIssue] = useState<SimilarIssue | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<string>('ai-analysis');
+  const [tempFixData, setTempFixData] = useState<any>(null);
 
   const username = localStorage.getItem("username") || "User";
 
@@ -199,6 +202,41 @@ export default function Issues() {
     setIsLoading(false);
   };
 
+  const fetchTempFixData = async () => {
+    // Mock temp fix data - this would normally come from an API
+    const mockTempFixData = {
+      migrationQueries: [
+        {
+          id: 1,
+          title: "Database Schema Update",
+          query: "ALTER TABLE users ADD COLUMN last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+          description: "Add last login tracking to user table",
+          estimatedTime: "5 minutes"
+        },
+        {
+          id: 2,
+          title: "Index Optimization",
+          query: "CREATE INDEX idx_user_email ON users(email);",
+          description: "Improve login performance by indexing email field",
+          estimatedTime: "2 minutes"
+        },
+        {
+          id: 3,
+          title: "Configuration Update",
+          query: "UPDATE config SET value = '300' WHERE key = 'session_timeout';",
+          description: "Increase session timeout to prevent frequent logouts",
+          estimatedTime: "1 minute"
+        }
+      ],
+      recommendations: [
+        "Run during maintenance window",
+        "Test in staging environment first",
+        "Monitor performance after implementation"
+      ]
+    };
+    setTempFixData(mockTempFixData);
+  };
+
   const handleFetchSimilarIssues = async () => {
     let currentId = '';
     
@@ -329,6 +367,9 @@ export default function Issues() {
             setAiAnalysis(data.reply?.response || '');
             setShowSimilar(true);
             setShowNoMatches(false);
+            // Fetch temp fix data and set active tab to AI Analysis
+            fetchTempFixData();
+            setActiveTab('ai-analysis');
           } else {
             setShowNoMatches(true);
             setShowSimilar(false);
@@ -1270,66 +1311,157 @@ export default function Issues() {
           </Card>
         )}
 
-        {/* AI Analysis Section */}
-        {aiAnalysis && showSimilar && !showDetailedView && (
-          <Card className="p-8 mb-8 shadow-xl border-0 bg-gradient-to-br from-white to-purple-50 rounded-2xl" data-testid="card-ai-analysis">
+        {/* Tabbed Results Section */}
+        {showSimilar && !showDetailedView && (
+          <Card className="p-8 shadow-xl border-0 bg-gradient-to-br from-white to-indigo-50 rounded-2xl" data-testid="container-tabbed-results">
             <CardContent className="p-0">
-              <div className="text-center mb-6">
-                <h2 className="text-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-3 rounded-lg inline-block">
-                  🤖 AI Analysis & Recommendations
-                </h2>
-              </div>
-              <div className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-inner">
-                <div className="prose prose-purple max-w-none">
-                  <div className="whitespace-pre-wrap text-gray-800 leading-relaxed" data-testid="text-ai-analysis">
-                    {aiAnalysis}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100 rounded-lg p-1">
+                  <TabsTrigger 
+                    value="ai-analysis" 
+                    className="rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                    data-testid="tab-ai-analysis"
+                  >
+                    🤖 AI Analysis & Recommendation
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="similar-issues" 
+                    className="rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                    data-testid="tab-similar-issues"
+                  >
+                    📋 Similar Issues
+                  </TabsTrigger>
+                  <TabsTrigger 
+                    value="temp-fix" 
+                    className="rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                    data-testid="tab-temp-fix"
+                  >
+                    🔧 Temp Fix Details
+                  </TabsTrigger>
+                </TabsList>
 
-        {/* Similar Issues with Direct Continue Buttons */}
-        {showSimilar && similarIssues.length > 0 && !showDetailedView && (
-          <Card className="p-8 shadow-xl border-0 bg-gradient-to-br from-white to-indigo-50 rounded-2xl" data-testid="container-similar-issues">
-            <CardContent className="p-0">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Similar Issues</h2>
-                <p className="text-sm text-gray-500">Click "Continue with this issue" on any issue below</p>
-              </div>
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Redmine Issues */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-red-700 border-b border-red-200 pb-2">
-                      Redmine Issues (Top 5)
-                    </h3>
-                    <span className="text-sm text-gray-500">
-                      {similarIssues.filter(issue => issue.source === 'redmine').length} found
-                    </span>
-                  </div>
-                  <div className="space-y-3" data-testid="container-redmine-issues">
-                    {similarIssues.filter(issue => issue.source === 'redmine').slice(0, 5).map(renderIssueCard)}
-                  </div>
-                </div>
-                
-                {/* Mantis Issues */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-blue-700 border-b border-blue-200 pb-2">
-                      Mantis Issues (Top 5)
-                    </h3>
-                    <span className="text-sm text-gray-500">
-                      {similarIssues.filter(issue => issue.source === 'mantis').length} found
-                    </span>
-                  </div>
-                  <div className="space-y-3" data-testid="container-mantis-issues">
-                    {similarIssues.filter(issue => issue.source === 'mantis').slice(0, 5).map(renderIssueCard)}
-                  </div>
-                </div>
-              </div>
+                <TabsContent value="ai-analysis" className="mt-0" data-testid="content-ai-analysis">
+                  {aiAnalysis ? (
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+                      <div className="text-center mb-6">
+                        <h2 className="text-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-purple-700 px-6 py-3 rounded-lg inline-block">
+                          🤖 AI Analysis & Recommendations
+                        </h2>
+                      </div>
+                      <div className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-inner">
+                        <div className="prose prose-purple max-w-none">
+                          <div className="whitespace-pre-wrap text-gray-800 leading-relaxed" data-testid="text-ai-analysis">
+                            {aiAnalysis}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No AI analysis available yet. Please fetch similar issues first.</p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="similar-issues" className="mt-0" data-testid="content-similar-issues">
+                  {similarIssues.length > 0 ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold text-gray-900">Similar Issues</h2>
+                        <p className="text-sm text-gray-500">Click "Continue with this issue" on any issue below</p>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Redmine Issues */}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-medium text-red-700 border-b border-red-200 pb-2">
+                              Redmine Issues (Top 5)
+                            </h3>
+                            <span className="text-sm text-gray-500">
+                              {similarIssues.filter(issue => issue.source === 'redmine').length} found
+                            </span>
+                          </div>
+                          <div className="space-y-3" data-testid="container-redmine-issues">
+                            {similarIssues.filter(issue => issue.source === 'redmine').slice(0, 5).map(renderIssueCard)}
+                          </div>
+                        </div>
+                        
+                        {/* Mantis Issues */}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-medium text-blue-700 border-b border-blue-200 pb-2">
+                              Mantis Issues (Top 5)
+                            </h3>
+                            <span className="text-sm text-gray-500">
+                              {similarIssues.filter(issue => issue.source === 'mantis').length} found
+                            </span>
+                          </div>
+                          <div className="space-y-3" data-testid="container-mantis-issues">
+                            {similarIssues.filter(issue => issue.source === 'mantis').slice(0, 5).map(renderIssueCard)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No similar issues found. Please try fetching similar issues first.</p>
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="temp-fix" className="mt-0" data-testid="content-temp-fix">
+                  {tempFixData ? (
+                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                      <div className="text-center mb-6">
+                        <h2 className="text-xl font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 px-6 py-3 rounded-lg inline-block">
+                          🔧 Temporary Fix Details
+                        </h2>
+                      </div>
+                      
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Migration Queries</h3>
+                          <div className="space-y-4">
+                            {tempFixData.migrationQueries.map((query: any) => (
+                              <div key={query.id} className="bg-white border border-green-200 rounded-lg p-4 shadow-sm">
+                                <div className="flex items-start justify-between mb-2">
+                                  <h4 className="font-medium text-gray-900">{query.title}</h4>
+                                  <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded">
+                                    {query.estimatedTime}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-3">{query.description}</p>
+                                <div className="bg-gray-900 text-green-400 p-3 rounded-md font-mono text-sm overflow-x-auto">
+                                  {query.query}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recommendations</h3>
+                          <div className="bg-white border border-green-200 rounded-lg p-4 shadow-sm">
+                            <ul className="space-y-2">
+                              {tempFixData.recommendations.map((recommendation: string, index: number) => (
+                                <li key={index} className="flex items-start gap-2 text-gray-700">
+                                  <span className="text-green-600 mt-1">•</span>
+                                  {recommendation}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No temporary fix details available. Please fetch similar issues first.</p>
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         )}
