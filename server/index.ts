@@ -214,7 +214,10 @@ app.post('/api/auth/login', async (req, res) => {
     const token = createAccessToken({ sub: username });
     res.json({
       token,
-      user: { username }
+      user: { 
+        username,
+        fullName: "Poovarasan" // Provide full name for welcome message
+      }
     });
   } catch (error) {
     console.error('Login error:', error);

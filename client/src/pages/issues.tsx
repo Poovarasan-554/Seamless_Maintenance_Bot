@@ -37,6 +37,16 @@ interface SimilarIssue {
   updated?: string;
   resolution?: string;
   similarity_percentage: number;
+  mysqlQueryIndex?: {
+    queryCount: number;
+    queries: Array<{
+      id: string;
+      query: string;
+      description: string;
+      executionTime: string;
+      resultCount: number;
+    }>;
+  };
 }
 
 export default function Issues() {
@@ -65,8 +75,11 @@ export default function Issues() {
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('ai-analysis');
   const [tempFixData, setTempFixData] = useState<any>(null);
+  const [mysqlQueryData, setMysqlQueryData] = useState<{[key: number]: any}>({});
+  const [isLoadingSqlQuery, setIsLoadingSqlQuery] = useState<{[key: number]: boolean}>({});
 
   const username = localStorage.getItem("username") || "User";
+  const userFullName = localStorage.getItem("userFullName") || "Poovarasan"; // Default to full name
 
   // Mock data removed - now using API data exclusively
 
@@ -78,6 +91,7 @@ export default function Issues() {
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("username");
+    localStorage.removeItem("userFullName"); // Remove full name to prevent stale data
     localStorage.removeItem("authToken");
     setLocation("/login");
   };
@@ -495,8 +509,48 @@ export default function Issues() {
     }
   };
 
-  const handleSqlQueryDetails = (issue: SimilarIssue, e: React.MouseEvent) => {
+  const handleSqlQueryDetails = async (issue: SimilarIssue, e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Check if MySQL query data already exists for this issue
+    if (!mysqlQueryData[issue.id]) {
+      setIsLoadingSqlQuery(prev => ({...prev, [issue.id]: true}));
+      
+      try {
+        const authToken = localStorage.getItem("authToken");
+        const response = await fetch(`https://maintenancebot-ai.infinitisoftware.net/api/mysql_query_index/${issue.id}`, {
+          method: 'GET',
+          headers: {
+            "Content-Type": "application/json",
+            ...(authToken && { "Authorization": `Bearer ${authToken}` })
+          }
+        });
+        
+        if (response.ok) {
+          const queryData = await response.json();
+          setMysqlQueryData(prev => ({...prev, [issue.id]: queryData}));
+          
+          // If no queries found, don't show the modal
+          if (!queryData.queryCount || queryData.queryCount === 0) {
+            setError('No MySQL queries found for this issue.');
+            setIsLoadingSqlQuery(prev => ({...prev, [issue.id]: false}));
+            return;
+          }
+        } else {
+          setError('Failed to fetch MySQL query data. Please try again.');
+          setIsLoadingSqlQuery(prev => ({...prev, [issue.id]: false}));
+          return;
+        }
+      } catch (error) {
+        console.error('Error fetching MySQL query data:', error);
+        setError('Network error. Please check your connection and try again.');
+        setIsLoadingSqlQuery(prev => ({...prev, [issue.id]: false}));
+        return;
+      }
+      
+      setIsLoadingSqlQuery(prev => ({...prev, [issue.id]: false}));
+    }
+    
     setSelectedSqlIssue(issue);
     setShowSqlModal(true);
   };
@@ -565,23 +619,36 @@ export default function Issues() {
                 )}
               </div>
             </div>
-            <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full" data-testid={`similarity-${issue.id}`}>
-              {issue.similarity_percentage.toFixed(1)}% match
-            </span>
+            <div className="flex flex-col items-end text-right">
+              <span className="text-sm font-bold text-green-700 bg-green-100 px-3 py-2 rounded-lg border border-green-200 min-w-[80px] text-center" data-testid={`similarity-${issue.id}`}>
+                {issue.similarity_percentage.toFixed(1)}%
+              </span>
+              <span className="text-xs text-gray-500 mt-1">match</span>
+            </div>
           </div>
           
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
             <div className="flex items-center gap-2">
-              {issue.source === 'redmine' && (
+              {issue.source === 'redmine' && (mysqlQueryData[issue.id]?.queryCount > 0 || !mysqlQueryData[issue.id]) && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={(e) => handleSqlQueryDetails(issue, e)}
                   data-testid={`button-sql-query-${issue.id}`}
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200"
+                  disabled={isLoadingSqlQuery[issue.id]}
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200 disabled:opacity-50"
                 >
-                  <Code className="w-4 h-4 mr-1" />
-                  SQL Query Details
+                  {isLoadingSqlQuery[issue.id] ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <Code className="w-4 h-4 mr-1" />
+                      SQL Query Details
+                    </>
+                  )}
                 </Button>
               )}
             </div>
@@ -619,7 +686,7 @@ export default function Issues() {
               <span className="text-3xl">🔧</span>
               Issue Tracker
             </h1>
-            <p className="text-lg text-gray-600">Welcome back, {username}!</p>
+            <p className="text-lg text-gray-600">Welcome back, {userFullName}!</p>
           </div>
           <Button
             onClick={handleLogout}
@@ -1316,24 +1383,21 @@ export default function Issues() {
           <Card className="p-8 shadow-xl border-0 bg-gradient-to-br from-white to-indigo-50 rounded-2xl" data-testid="container-tabbed-results">
             <CardContent className="p-0">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100 rounded-lg p-1">
+                <TabsList className="grid w-full grid-cols-3 mb-8">
                   <TabsTrigger 
                     value="ai-analysis" 
-                    className="rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm"
                     data-testid="tab-ai-analysis"
                   >
                     🤖 AI Analysis & Recommendation
                   </TabsTrigger>
                   <TabsTrigger 
                     value="similar-issues" 
-                    className="rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm"
                     data-testid="tab-similar-issues"
                   >
                     📋 Similar Issues
                   </TabsTrigger>
                   <TabsTrigger 
                     value="temp-fix" 
-                    className="rounded-md transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm"
                     data-testid="tab-temp-fix"
                   >
                     🔧 Temp Fix Details
@@ -1504,27 +1568,36 @@ export default function Issues() {
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <Code className="w-5 h-5" />
-                      Related SQL Query
+                      MySQL Query Index ({mysqlQueryData[selectedSqlIssue.id]?.queryCount || 0} queries found)
                     </h3>
-                    <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
-                      <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap" data-testid="sql-query-content">
-{`SELECT 
-    i.issue_id,
-    i.title,
-    i.description,
-    i.status,
-    i.priority,
-    i.assignee,
-    i.created_date,
-    i.updated_date,
-    p.project_name
-FROM issues i
-LEFT JOIN projects p ON i.project_id = p.project_id
-WHERE i.issue_id = ${selectedSqlIssue.id}
-    AND i.status IN ('Open', 'In Progress', 'Resolved')
-ORDER BY i.updated_date DESC;`}
-                      </pre>
-                    </div>
+                    {mysqlQueryData[selectedSqlIssue.id]?.queries?.length > 0 ? (
+                      <div className="space-y-4">
+                        {mysqlQueryData[selectedSqlIssue.id].queries.map((query: any, index: number) => (
+                          <div key={query.id || index} className="border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium text-gray-900">{query.description}</h4>
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <span>Execution: {query.executionTime}ms</span>
+                                  <span>Results: {query.resultCount}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                              <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap" data-testid={`sql-query-content-${index}`}>
+                                {query.query}
+                              </pre>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
+                        <Code className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-lg font-medium">No MySQL queries found</p>
+                        <p className="text-sm">No query index data available for this issue.</p>
+                      </div>
+                    )}
                   </div>
                   
                   {/* Query Explanation */}
