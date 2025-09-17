@@ -518,7 +518,7 @@ export default function Issues() {
       
       try {
         const authToken = localStorage.getItem("authToken");
-        const response = await fetch(`https://maintenancebot-ai.infinitisoftware.net/api/mysql_query_index/${issue.id}`, {
+        const response = await fetch(`/api/mysql_query_index/${issue.id}`, {
           method: 'GET',
           headers: {
             "Content-Type": "application/json",
@@ -573,8 +573,8 @@ export default function Issues() {
         data-testid={`card-issue-${issue.id}`}
       >
         <div className="space-y-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 space-y-2">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0 space-y-2">
               <h4 className="font-medium text-gray-900" data-testid={`text-issue-title-${issue.id}`}>
                 #{issue.id}: {issue.title}
               </h4>
@@ -619,17 +619,17 @@ export default function Issues() {
                 )}
               </div>
             </div>
-            <div className="flex flex-col items-end text-right">
-              <span className="text-sm font-bold text-green-700 bg-green-100 px-3 py-2 rounded-lg border border-green-200 min-w-[80px] text-center" data-testid={`similarity-${issue.id}`}>
+            <div className="flex flex-col items-end justify-start text-right flex-shrink-0 mt-1">
+              <div className="text-sm font-bold text-green-700 bg-green-100 px-3 py-2 rounded-lg border border-green-200 min-w-[85px] text-center" data-testid={`similarity-${issue.id}`}>
                 {issue.similarity_percentage.toFixed(1)}%
-              </span>
-              <span className="text-xs text-gray-500 mt-1">match</span>
+              </div>
+              <span className="text-xs text-gray-500 mt-1 font-medium">match</span>
             </div>
           </div>
           
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
             <div className="flex items-center gap-2">
-              {issue.source === 'redmine' && (mysqlQueryData[issue.id]?.queryCount > 0 || !mysqlQueryData[issue.id]) && (
+              {issue.source === 'redmine' && mysqlQueryData[issue.id]?.queryCount > 0 && (
                 <Button
                   variant="outline"
                   size="sm"
