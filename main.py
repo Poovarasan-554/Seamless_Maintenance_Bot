@@ -311,6 +311,101 @@ async def get_similar_issues(issue_id: int, username: str = Depends(verify_token
     # Return sorted similar issues (already sorted by similarity percentage)
     return mock_similar_issues
 
+# Mock MySQL query index data
+mock_mysql_query_data = {
+    101: {
+        "queryCount": 3,
+        "queries": [
+            {
+                "id": "query-101-1",
+                "query": "SELECT * FROM issues WHERE status = 'open' AND priority = 'high'",
+                "description": "Fetch high priority open issues",
+                "executionTime": "0.15ms",
+                "resultCount": 42
+            },
+            {
+                "id": "query-101-2", 
+                "query": "UPDATE issues SET last_accessed = NOW() WHERE id = 101",
+                "description": "Update issue last accessed timestamp",
+                "executionTime": "0.08ms",
+                "resultCount": 1
+            },
+            {
+                "id": "query-101-3",
+                "query": "SELECT COUNT(*) FROM user_actions WHERE issue_id = 101 AND action_type = 'view'",
+                "description": "Count view actions for issue",
+                "executionTime": "0.12ms", 
+                "resultCount": 1
+            }
+        ]
+    },
+    102: {
+        "queryCount": 2,
+        "queries": [
+            {
+                "id": "query-102-1",
+                "query": "SELECT * FROM authentication_logs WHERE user_id IN (SELECT user_id FROM issue_assignments WHERE issue_id = 102)",
+                "description": "Authentication logs for assigned users",
+                "executionTime": "0.25ms",
+                "resultCount": 18
+            },
+            {
+                "id": "query-102-2",
+                "query": "INSERT INTO issue_history (issue_id, action, timestamp) VALUES (102, 'status_change', NOW())",
+                "description": "Log status change in issue history",
+                "executionTime": "0.05ms",
+                "resultCount": 1
+            }
+        ]
+    },
+    201: {
+        "queryCount": 4,
+        "queries": [
+            {
+                "id": "query-201-1",
+                "query": "SELECT session_id, user_id, created_at FROM user_sessions WHERE status = 'active'",
+                "description": "Get active user sessions",
+                "executionTime": "0.18ms",
+                "resultCount": 156
+            },
+            {
+                "id": "query-201-2",
+                "query": "SELECT COUNT(*) FROM session_timeouts WHERE timeout_reason = 'inactivity'",
+                "description": "Count inactivity timeout occurrences", 
+                "executionTime": "0.09ms",
+                "resultCount": 1
+            },
+            {
+                "id": "query-201-3",
+                "query": "UPDATE user_preferences SET session_timeout = 3600 WHERE user_id = ?",
+                "description": "Update user session timeout preference",
+                "executionTime": "0.07ms",
+                "resultCount": 1
+            },
+            {
+                "id": "query-201-4",
+                "query": "SELECT * FROM audit_logs WHERE table_name = 'user_sessions' AND action = 'logout'",
+                "description": "Audit logout events from session table",
+                "executionTime": "0.22ms",
+                "resultCount": 89
+            }
+        ]
+    }
+    # Issues like 203, 204, 205 will have no MySQL query data (empty response)
+}
+
+@app.get("/api/mysql_query_index/{issue_id}")
+async def get_mysql_query_index(issue_id: int, username: str = Depends(verify_token)):
+    """Get MySQL query index data for a specific issue ID"""
+    if issue_id in mock_mysql_query_data:
+        return mock_mysql_query_data[issue_id]
+    else:
+        # Return empty query data for issues without MySQL queries
+        return {
+            "queryCount": 0,
+            "queries": []
+        }
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
