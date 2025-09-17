@@ -277,9 +277,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Setup client serving and start server
+// Setup client serving and start server  
 async function setupServer() {
-  if (process.env.NODE_ENV === 'development') {
+  if (false) { // Force production mode to eliminate development requests
     // Enable file watching with polling for containerized environments
     process.env.CHOKIDAR_USEPOLLING = '1';
     process.env.CHOKIDAR_INTERVAL = '300';
@@ -288,14 +288,11 @@ async function setupServer() {
     process.env.DANGEROUSLY_DISABLE_HOST_CHECK = 'true';
     process.env.HOST = '0.0.0.0';
     
-    // Create Vite server in middleware mode with comprehensive host configuration
+    // Create Vite server in middleware mode with HMR disabled to prevent excessive requests
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
-        hmr: {
-          port: 24678,
-          host: '0.0.0.0'
-        },
+        hmr: false,  // Disable HMR to prevent excessive ping requests
         host: '0.0.0.0',
         allowedHosts: true
       },
