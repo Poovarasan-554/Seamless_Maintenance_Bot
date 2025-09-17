@@ -686,7 +686,7 @@ export default function Issues() {
               <span className="text-3xl">🔧</span>
               Issue Tracker
             </h1>
-            <p className="text-lg text-gray-600">Welcome back, {userFullName}!</p>
+            <p className="text-lg text-gray-600">Welcome back, {userFullName}! 🎉</p>
           </div>
           <Button
             onClick={handleLogout}

@@ -11,6 +11,7 @@ import { fileURLToPath } from "url";
 import { users, issues, loginSchema } from "../shared/schema.js";
 import { eq } from "drizzle-orm";
 import MemoryStore from "memorystore";
+import { createServer as createViteServer } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -276,35 +277,56 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve static files from the built frontend
-const distPath = path.resolve(__dirname, "../dist/public");
-app.use('/assets', express.static(path.join(distPath, 'assets')));
+// Setup client serving and start server
+async function setupServer() {
+  if (process.env.NODE_ENV === 'development') {
+    // Enable file watching with polling for containerized environments
+    process.env.CHOKIDAR_USEPOLLING = '1';
+    process.env.CHOKIDAR_INTERVAL = '300';
+    
+    // Create Vite server in middleware mode
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa'
+    });
+    
+    // Use vite's connect instance as middleware
+    app.use(vite.middlewares);
+  } else {
+    // Production: Serve static files from the built frontend
+    const distPath = path.resolve(__dirname, "../dist/public");
+    app.use('/assets', express.static(path.join(distPath, 'assets')));
 
-// Serve React app for client routing (SPA fallback)
-app.get('*', (req, res) => {
-  // Don't serve SPA for API routes
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ detail: "API endpoint not found" });
+    // Serve React app for client routing (SPA fallback)
+    app.get('*', (req, res) => {
+      // Don't serve SPA for API routes
+      if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ detail: "API endpoint not found" });
+      }
+      
+      // Serve the React app index.html for all other routes
+      res.sendFile(path.join(distPath, 'index.html'), (err) => {
+        if (err) {
+          // Fallback if build doesn't exist
+          res.sendFile(path.resolve(__dirname, "../client/index.html"));
+        }
+      });
+    });
   }
-  
-  // Serve the React app index.html for all other routes
-  res.sendFile(path.join(distPath, 'index.html'), (err) => {
-    if (err) {
-      // Fallback if build doesn't exist
-      res.sendFile(path.resolve(__dirname, "../client/index.html"));
-    }
+
+  // Error handling middleware
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(err.stack);
+    res.status(500).json({ detail: 'Internal server error' });
   });
-});
 
-// Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ detail: 'Internal server error' });
-});
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${port}`);
+  });
+}
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${port}`);
-});
+// Start the server
+setupServer().catch(console.error);
 
 // Handle graceful shutdown
 process.on('SIGINT', () => {
