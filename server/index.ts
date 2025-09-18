@@ -197,17 +197,19 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = loginSchema.parse(req.body);
     
-    // For development, use hardcoded credentials
-    const defaultUser = {
-      username: "Poovarasan",
-      password: "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW" // "secret" hashed
+    // For development, use hardcoded credentials but return the actual username
+    const validUsers = {
+      "Poovarasan": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW", // "secret" hashed
+      "admin": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW", // "secret" hashed
+      "user": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW"  // "secret" hashed
     };
 
-    if (username !== defaultUser.username) {
+    const userPassword = validUsers[username as keyof typeof validUsers];
+    if (!userPassword) {
       return res.status(401).json({ detail: 'Invalid credentials' });
     }
 
-    const isValidPassword = await bcrypt.compare(password, defaultUser.password);
+    const isValidPassword = await bcrypt.compare(password, userPassword);
     if (!isValidPassword) {
       return res.status(401).json({ detail: 'Invalid credentials' });
     }
@@ -217,7 +219,7 @@ app.post('/api/auth/login', async (req, res) => {
       token,
       user: { 
         username,
-        fullName: "Poovarasan" // Provide full name for welcome message
+        fullName: username // Use the actual username as the full name
       }
     });
   } catch (error) {

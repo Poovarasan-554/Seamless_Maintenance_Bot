@@ -27,8 +27,8 @@ export default function Login() {
     setError("");
 
     try {
-      // Call the external API backend
-      const response = await fetch("https://maintenancebot-ai.infinitisoftware.net/api/auth/login", {
+      // Call the local API backend
+      const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -44,7 +44,7 @@ export default function Login() {
         // Store login state and token
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("username", result.user.username);
-        localStorage.setItem("userFullName", result.user.fullName || "Poovarasan"); // Default to known full name since user is hardcoded
+        localStorage.setItem("userFullName", result.user.fullName || result.user.username); // Use username as fallback for fullName
         localStorage.setItem("authToken", result.token);
         setLocation("/issues");
       } else {
