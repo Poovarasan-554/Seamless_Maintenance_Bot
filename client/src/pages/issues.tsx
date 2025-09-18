@@ -78,8 +78,9 @@ export default function Issues() {
   const [mysqlQueryData, setMysqlQueryData] = useState<{[key: number]: any}>({});
   const [isLoadingSqlQuery, setIsLoadingSqlQuery] = useState<{[key: number]: boolean}>({});
 
-  const username = localStorage.getItem("username") || "User";
-  const userFullName = localStorage.getItem("userFullName") || "Poovarasan"; // Default to full name
+  const username = localStorage.getItem("username");
+  const userFullName = localStorage.getItem("userFullName");
+  const displayName = userFullName || username || "Guest"; // Prefer userFullName, then username, then Guest
 
   // Mock data removed - now using API data exclusively
 
@@ -686,7 +687,7 @@ export default function Issues() {
               <span className="text-3xl">🔧</span>
               Issue Tracker
             </h1>
-            <p className="text-lg text-gray-600">Welcome back, {userFullName}! 🎉</p>
+            <p className="text-lg text-gray-600">Welcome back, {displayName}! 🎉</p>
           </div>
           <Button
             onClick={handleLogout}
