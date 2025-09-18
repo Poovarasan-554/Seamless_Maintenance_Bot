@@ -218,10 +218,133 @@ export default function Issues() {
   };
 
   const fetchTempFixData = async (apiResponse?: any) => {
-    // Extract migrationQuery from API response if available
-    const migrationQuery = apiResponse?.reply?.migrationQuery || apiResponse?.migrationQuery;
+    console.log('fetchTempFixData called');
     
-    if (migrationQuery && migrationQuery.trim()) {
+    // Helper function to extract SQL from code fences or find SQL content
+    const extractSqlContent = (value: any, depth = 0): string | null => {
+      if (depth > 3 || !value) return null;
+      
+      if (typeof value === 'string' && value.trim()) {
+        const trimmed = value.trim();
+        
+        // Extract from SQL code fences first
+        const sqlFenceMatch = trimmed.match(/```sql\s*\n([\s\S]*?)\n```/i);
+        if (sqlFenceMatch) {
+          return sqlFenceMatch[1].trim();
+        }
+        
+        // Extract from generic code fences if they contain SQL
+        const codeMatch = trimmed.match(/```\s*\n([\s\S]*?)\n```/);
+        if (codeMatch && isValidSql(codeMatch[1])) {
+          return codeMatch[1].trim();
+        }
+        
+        // Check if the raw string is SQL
+        if (isValidSql(trimmed)) {
+          return trimmed;
+        }
+      }
+      
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const extracted = extractSqlContent(item, depth + 1);
+          if (extracted) return extracted;
+        }
+      }
+      
+      if (value && typeof value === 'object') {
+        // Check deep nested fields
+        const sqlFields = ['sql', 'query', 'text', 'migrationQuery', 'migration_query', 'value', 'content', 'code'];
+        for (const field of sqlFields) {
+          if (value[field]) {
+            const extracted = extractSqlContent(value[field], depth + 1);
+            if (extracted) return extracted;
+          }
+        }
+      }
+      
+      return null;
+    };
+    
+    // Strict SQL validation
+    const isValidSql = (str: string): boolean => {
+      if (!str || typeof str !== 'string') return false;
+      
+      const sqlKeywords = /\b(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE|GRANT|REVOKE)\b/i;
+      const hasSqlStructure = /\b(FROM|WHERE|SET|VALUES|TABLE|DATABASE|INDEX)\b/i;
+      const hasEnding = /[;]|\bEND\b/i;
+      
+      return sqlKeywords.test(str) && (hasSqlStructure.test(str) || hasEnding.test(str) || str.includes('```'));
+    };
+    
+    // Priority-ordered search locations
+    const searchLocations = [
+      // Migration-specific fields first (highest priority)
+      () => apiResponse?.reply?.migrationQuery,
+      () => apiResponse?.reply?.migration_query,
+      () => apiResponse?.migrationQuery,
+      () => apiResponse?.migration_query,
+      
+      // Migration collections
+      () => apiResponse?.reply?.migrationQueries,
+      () => apiResponse?.reply?.migration_queries,
+      () => apiResponse?.migrationQueries,
+      () => apiResponse?.migration_queries,
+      
+      // SQL-specific fields
+      () => apiResponse?.reply?.sqlQueries,
+      () => apiResponse?.reply?.sql_queries,
+      () => apiResponse?.reply?.queries,
+      () => apiResponse?.queries,
+      
+      // In similar issues data
+      () => apiResponse?.reply?.similiar_redmine_issues?.migrationQuery,
+      () => apiResponse?.reply?.similiar_redmine_issues?.migration_query,
+      () => apiResponse?.reply?.similiar_redmine_issues?.migrationQueries,
+      () => apiResponse?.reply?.similiar_redmine_issues?.queries,
+      
+      // In redmine/mantis issue arrays
+      () => {
+        const similarIssues = apiResponse?.reply?.similiar_redmine_issues;
+        if (similarIssues) {
+          const arrays = [similarIssues.redmine, similarIssues.mantis].filter(Array.isArray);
+          for (const issueArray of arrays) {
+            for (const issue of issueArray) {
+              const migrationKeys = ['migrationQuery', 'migration_query', 'migrationQueries', 'migration_queries', 'sqlQueries', 'queries'];
+              for (const key of migrationKeys) {
+                if (issue[key]) return issue[key];
+              }
+            }
+          }
+        }
+        return null;
+      },
+      
+      // Lower priority: general temp fix fields (may contain non-SQL text)
+      () => apiResponse?.reply?.tempFix,
+      () => apiResponse?.reply?.temp_fix,
+      () => apiResponse?.reply?.similiar_redmine_issues?.tempFix,
+      () => apiResponse?.reply?.similiar_redmine_issues?.temp_fix,
+    ];
+    
+    let migrationQuery: string | null = null;
+    
+    // Try each search location in priority order
+    for (let i = 0; i < searchLocations.length; i++) {
+      try {
+        const value = searchLocations[i]();
+        const extracted = extractSqlContent(value);
+        if (extracted) {
+          migrationQuery = extracted;
+          console.log(`Found migration query at location ${i}:`, migrationQuery.substring(0, 100) + '...');
+          break;
+        }
+      } catch (error) {
+        console.warn(`Error in search location ${i}:`, error);
+      }
+    }
+    
+    if (migrationQuery) {
       const tempFixData = {
         migrationQuery: migrationQuery,
         recommendations: [
@@ -230,9 +353,10 @@ export default function Issues() {
           "Monitor performance after implementation"
         ]
       };
+      console.log('Setting tempFixData with migration query');
       setTempFixData(tempFixData);
     } else {
-      // Set empty state if no migration query available
+      console.log('No valid migration query found, setting empty state');
       setTempFixData({
         migrationQuery: null,
         recommendations: []
