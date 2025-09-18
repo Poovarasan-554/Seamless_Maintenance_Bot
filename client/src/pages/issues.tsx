@@ -217,39 +217,27 @@ export default function Issues() {
     setIsLoading(false);
   };
 
-  const fetchTempFixData = async () => {
-    // Mock temp fix data - this would normally come from an API
-    const mockTempFixData = {
-      migrationQueries: [
-        {
-          id: 1,
-          title: "Database Schema Update",
-          query: "ALTER TABLE users ADD COLUMN last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
-          description: "Add last login tracking to user table",
-          estimatedTime: "5 minutes"
-        },
-        {
-          id: 2,
-          title: "Index Optimization",
-          query: "CREATE INDEX idx_user_email ON users(email);",
-          description: "Improve login performance by indexing email field",
-          estimatedTime: "2 minutes"
-        },
-        {
-          id: 3,
-          title: "Configuration Update",
-          query: "UPDATE config SET value = '300' WHERE key = 'session_timeout';",
-          description: "Increase session timeout to prevent frequent logouts",
-          estimatedTime: "1 minute"
-        }
-      ],
-      recommendations: [
-        "Run during maintenance window",
-        "Test in staging environment first",
-        "Monitor performance after implementation"
-      ]
-    };
-    setTempFixData(mockTempFixData);
+  const fetchTempFixData = async (apiResponse?: any) => {
+    // Extract migrationQuery from API response if available
+    const migrationQuery = apiResponse?.reply?.migrationQuery || apiResponse?.migrationQuery;
+    
+    if (migrationQuery && migrationQuery.trim()) {
+      const tempFixData = {
+        migrationQuery: migrationQuery,
+        recommendations: [
+          "Review the migration query carefully before execution",
+          "Test in staging environment first",
+          "Monitor performance after implementation"
+        ]
+      };
+      setTempFixData(tempFixData);
+    } else {
+      // Set empty state if no migration query available
+      setTempFixData({
+        migrationQuery: null,
+        recommendations: []
+      });
+    }
   };
 
   const handleFetchSimilarIssues = async () => {
@@ -382,8 +370,8 @@ export default function Issues() {
             setAiAnalysis(data.reply?.response || '');
             setShowSimilar(true);
             setShowNoMatches(false);
-            // Fetch temp fix data and set active tab to AI Analysis
-            fetchTempFixData();
+            // Fetch temp fix data with API response and set active tab to AI Analysis
+            fetchTempFixData(data);
             setActiveTab('ai-analysis');
           } else {
             setShowNoMatches(true);
@@ -1486,38 +1474,37 @@ export default function Issues() {
                       
                       <div className="space-y-6">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Migration Queries</h3>
-                          <div className="space-y-4">
-                            {tempFixData.migrationQueries.map((query: any) => (
-                              <div key={query.id} className="bg-white border border-green-200 rounded-lg p-4 shadow-sm">
-                                <div className="flex items-start justify-between mb-2">
-                                  <h4 className="font-medium text-gray-900">{query.title}</h4>
-                                  <span className="text-sm text-green-600 bg-green-100 px-2 py-1 rounded">
-                                    {query.estimatedTime}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-gray-600 mb-3">{query.description}</p>
-                                <div className="bg-gray-900 text-green-400 p-3 rounded-md font-mono text-sm overflow-x-auto">
-                                  {query.query}
-                                </div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Migration Query</h3>
+                          <div className="bg-white border border-green-200 rounded-lg p-4 shadow-sm">
+                            {tempFixData.migrationQuery ? (
+                              <div className="max-h-96 overflow-y-auto">
+                                <pre className="bg-gray-900 text-green-400 p-4 rounded-md font-mono text-sm whitespace-pre-wrap overflow-x-auto">
+                                  {tempFixData.migrationQuery}
+                                </pre>
                               </div>
-                            ))}
+                            ) : (
+                              <p className="text-gray-500 italic text-center py-4">
+                                No migration query details available
+                              </p>
+                            )}
                           </div>
                         </div>
                         
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recommendations</h3>
-                          <div className="bg-white border border-green-200 rounded-lg p-4 shadow-sm">
-                            <ul className="space-y-2">
-                              {tempFixData.recommendations.map((recommendation: string, index: number) => (
-                                <li key={index} className="flex items-start gap-2 text-gray-700">
-                                  <span className="text-green-600 mt-1">•</span>
-                                  {recommendation}
-                                </li>
-                              ))}
-                            </ul>
+                        {tempFixData.recommendations && tempFixData.recommendations.length > 0 && (
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recommendations</h3>
+                            <div className="bg-white border border-green-200 rounded-lg p-4 shadow-sm">
+                              <ul className="space-y-2">
+                                {tempFixData.recommendations.map((recommendation: string, index: number) => (
+                                  <li key={index} className="flex items-start gap-2 text-gray-700">
+                                    <span className="text-green-600 mt-1">•</span>
+                                    {recommendation}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   ) : (
