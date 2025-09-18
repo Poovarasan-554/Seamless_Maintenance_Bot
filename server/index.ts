@@ -279,7 +279,7 @@ app.get('/api/health', (req, res) => {
 
 // Setup client serving and start server  
 async function setupServer() {
-  if (false) { // Force production mode to eliminate development requests
+  if (process.env.NODE_ENV === 'development') { // Enable development mode in Replit
     // Enable file watching with polling for containerized environments
     process.env.CHOKIDAR_USEPOLLING = '1';
     process.env.CHOKIDAR_INTERVAL = '300';
