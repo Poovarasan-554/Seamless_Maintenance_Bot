@@ -1,13 +1,13 @@
 # Overview
 
-This is a full-stack web application built with a modern tech stack featuring React frontend and Python FastAPI backend. The application is an issue tracking or ticketing system with functionality for searching and displaying issue details, along with similar issue recommendations. It includes JWT-based authentication, comprehensive UI with modern design elements, and detailed issue management capabilities.
+This is a full-stack web application built with a modern tech stack featuring React frontend and Node.js/Express backend. The application is an issue tracking or ticketing system with functionality for searching and displaying issue details, along with similar issue recommendations. It includes JWT-based authentication, comprehensive UI with modern design elements, and detailed issue management capabilities.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-## Recent Changes (August 2024)
-- **Backend Migration**: Converted from Node.js/Express to Python FastAPI
+## Recent Changes (September 2024)
+- **Backend Migration**: Converted from Python FastAPI to Node.js/Express
 - **UI Personalization**: Replaced "admin" with "Poovarasan" throughout the interface
 - **Authentication**: Implemented JWT-based authentication with secure password hashing
 - **UI Enhancements**: Added modern gradient backgrounds and improved visual design
@@ -25,11 +25,11 @@ Preferred communication style: Simple, everyday language.
 - **Build Tool**: Vite for fast development and optimized production builds
 
 ## Backend Architecture  
-- **FastAPI**: Modern Python web framework with automatic API documentation
+- **Node.js/Express**: Modern Node.js web framework with TypeScript support
 - **JWT Authentication**: Secure token-based authentication with bcrypt password hashing
+- **PostgreSQL Database**: Neon serverless PostgreSQL database with Drizzle ORM
 - **Mock Data Storage**: In-memory data storage for issues and similar issue recommendations
-- **CORS Support**: Cross-origin resource sharing enabled for frontend integration
-- **Static File Serving**: Integrated React app serving with fallback routing
+- **Vite Integration**: Integrated React app serving with Vite middleware in development
 - **API Structure**: All API routes prefixed with `/api`, with comprehensive error handling
 
 ## Data Storage
