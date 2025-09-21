@@ -531,8 +531,28 @@ export default function Issues() {
           ];
           
           if (transformedIssues.length > 0) {
-            setSimilarIssues(transformedIssues);
-            setAiAnalysis(data.reply?.response || '');
+            // Sort similar issues by match percentage in descending order
+            const sortedIssues = transformedIssues.sort((a, b) => b.similarity_percentage - a.similarity_percentage);
+            setSimilarIssues(sortedIssues);
+            
+            // Enhanced AI analysis extraction with multiple fallback paths
+            let analysis = '';
+            if (data.reply?.response) {
+              analysis = data.reply.response;
+            } else if (data.reply?.ai_analysis) {
+              analysis = data.reply.ai_analysis;
+            } else if (data.reply?.analysis) {
+              analysis = data.reply.analysis;
+            } else if (data.ai_analysis) {
+              analysis = data.ai_analysis;
+            } else if (data.analysis) {
+              analysis = data.analysis;
+            } else if (typeof data.reply === 'string') {
+              analysis = data.reply;
+            }
+            
+            console.log('AI Analysis extracted:', analysis.substring(0, 100) + '...');
+            setAiAnalysis(analysis);
             setShowSimilar(true);
             setShowNoMatches(false);
             // Fetch temp fix data with API response and set active tab to AI Analysis
@@ -630,29 +650,32 @@ export default function Issues() {
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeStyle = (status: string) => {
     switch (status) {
       case 'Open':
-        return 'destructive';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'In Progress':
-        return 'secondary';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Closed':
       case 'Resolved':
-        return 'default';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'On Hold':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
       default:
-        return 'secondary';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
-  const getPriorityBadgeVariant = (priority: string) => {
+  const getPriorityBadgeStyle = (priority: string) => {
     switch (priority) {
       case 'High':
-        return 'destructive';
+        return 'bg-red-100 text-red-800 border-red-200';
       case 'Medium':
-        return 'secondary';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'Low':
-        return 'outline';
+        return 'bg-green-100 text-green-800 border-green-200';
       default:
-        return 'secondary';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -755,13 +778,20 @@ export default function Issues() {
                   {stripHtmlTags(issue.description)}
                 </p>
               )}
-              <div className="flex items-center gap-2">
-                <Badge variant={getStatusBadgeVariant(issue.status)} data-testid={`badge-status-${issue.id}`}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className={getStatusBadgeStyle(issue.status)} data-testid={`badge-status-${issue.id}`}>
                   {issue.status}
                 </Badge>
-                <Badge variant={getPriorityBadgeVariant(issue.priority || 'Medium')} data-testid={`badge-priority-${issue.id}`}>
+                <Badge className={getPriorityBadgeStyle(issue.priority || 'Medium')} data-testid={`badge-priority-${issue.id}`}>
                   {issue.priority || 'Medium'}
                 </Badge>
+                {/* Contact Person badge - only for Redmine issues with closedBy information */}
+                {issue.source === 'redmine' && issue.closedBy && (
+                  <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50" data-testid={`badge-contact-${issue.id}`}>
+                    <User className="w-3 h-3 mr-1" />
+                    Contact: {issue.closedBy}
+                  </Badge>
+                )}
               </div>
               
               {/* Simplified display - only required fields */}
@@ -793,6 +823,23 @@ export default function Issues() {
                   SQL Query Details
                 </Button>
               )}
+              
+              {/* View in Mantis button - only for Mantis issues */}
+              {issue.source === 'mantis' && issue.link && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(issue.link, '_blank', 'noopener,noreferrer');
+                  }}
+                  data-testid={`button-view-mantis-${issue.id}`}
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200"
+                >
+                  <ExternalLink className="w-4 h-4 mr-1" />
+                  View in Mantis
+                </Button>
+              )}
             </div>
             
             <Button
@@ -809,7 +856,17 @@ export default function Issues() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      {/* Header Marquee */}
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white overflow-hidden whitespace-nowrap">
+        <div className="animate-marquee inline-block py-2 px-4">
+          <span className="text-lg font-medium">
+            🚀 Seamless Maintenance Bot – Your Smart Assistant for Issue Tracking & Resolution
+          </span>
+        </div>
+      </div>
+      
+      <div className="py-8 px-4">
       {/* Success Animation Overlay */}
       {showSuccessAnimation && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" data-testid="success-animation-overlay">
@@ -878,6 +935,10 @@ export default function Issues() {
                   value={issueType}
                   onValueChange={(value: 'redmine' | 'mantis' | 'problem') => {
                     setIssueType(value);
+                    // Reset all form input values when switching radio buttons
+                    setIssueId('');
+                    setMantisId('');
+                    setProblemStatement('');
                     setError('');
                     setIssueDetails(null);
                     resetAllFutureActions();
@@ -1037,7 +1098,7 @@ export default function Issues() {
                   <h2 className="text-xl font-semibold text-gray-900" data-testid="text-issue-title">
                     #{issueDetails.id}: {issueDetails.title}
                   </h2>
-                  <Badge variant={getStatusBadgeVariant(issueDetails.status)} data-testid="badge-status">
+                  <Badge className={getStatusBadgeStyle(issueDetails.status)} data-testid="badge-status">
                     {issueDetails.status}
                   </Badge>
                 </div>
@@ -1050,7 +1111,7 @@ export default function Issues() {
                   <div>
                     <span className="font-medium text-gray-500">Priority:</span>
                     <div className="mt-1">
-                      <Badge variant={getPriorityBadgeVariant(issueDetails.priority)} data-testid="badge-priority">
+                      <Badge className={getPriorityBadgeStyle(issueDetails.priority)} data-testid="badge-priority">
                         {issueDetails.priority}
                       </Badge>
                     </div>
@@ -1217,7 +1278,7 @@ export default function Issues() {
                     View in {selectedIssueDetails.source === 'redmine' ? 'Redmine' : 'Mantis'}
                   </a>
                 </div>
-                <Badge variant={getStatusBadgeVariant(selectedIssueDetails.status)} data-testid="badge-detailed-status">
+                <Badge className={getStatusBadgeStyle(selectedIssueDetails.status)} data-testid="badge-detailed-status">
                   {selectedIssueDetails.status}
                 </Badge>
               </div>
@@ -1250,7 +1311,7 @@ export default function Issues() {
                   
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-2">Priority</h4>
-                    <Badge variant={getPriorityBadgeVariant(selectedIssueDetails.priority || 'Medium')} data-testid="badge-detailed-priority">
+                    <Badge className={getPriorityBadgeStyle(selectedIssueDetails.priority || 'Medium')} data-testid="badge-detailed-priority">
                       {selectedIssueDetails.priority || 'Medium'}
                     </Badge>
                   </div>
@@ -1799,6 +1860,7 @@ export default function Issues() {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }
