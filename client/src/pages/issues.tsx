@@ -25,18 +25,32 @@ interface IssueDetails {
 
 interface SimilarIssue {
   id: number;
-  title: string;
+  title: string;  // maps from 'subject'
   status: string;
-  priority: string;
+  priority?: string;
   source: 'redmine' | 'mantis';
   description?: string;
   assignee?: string;
   contactPerson?: string;
   closedBy?: string;
-  created?: string;
-  updated?: string;
+  created?: string;  // maps from 'created_on'
+  updated?: string;  // maps from 'updated_on'
   resolution?: string;
-  similarity_percentage: number;
+  similarity_percentage: number;  // maps from 'similarity' as string converted to number
+  // New fields from updated JSON structure
+  project?: string;
+  root_fix_info?: {
+    problem_statement?: string;
+    cause_of_issue?: string;
+    fix_details?: string;
+    committed_revision?: string;
+    mysql_query?: string;
+  };
+  cause_of_issue?: string;  // Direct field separate from root_fix_info
+  fix_details?: string;     // Direct field separate from root_fix_info
+  committed_revision?: string;
+  mysql_query?: string;
+  link?: string;            // URL to the issue
   mysqlQueryIndex?: {
     queryCount: number;
     queries: Array<{
@@ -456,7 +470,7 @@ export default function Issues() {
 
       if (response.ok) {
         const data = await response.json();
-        const similarIssuesData = data.reply?.similiar_redmine_issues;
+        const similarIssuesData = data.reply;
         
         if (similarIssuesData) {
           // Transform the response to match our expected format
@@ -465,27 +479,43 @@ export default function Issues() {
               id: issue.id,
               title: issue.subject,
               description: issue.description,
-              status: issue.status?.name || 'Open',
-              priority: issue.priority?.name || 'Medium',
-              assignee: issue.assigned_to?.name || 'Unassigned',
+              status: issue.status || 'Open',
+              priority: issue.priority || 'Medium',
+              assignee: issue.assignee || 'Unassigned',
               source: 'redmine' as const,
-              contactPerson: issue.assigned_to?.name || '',
-              similarity_percentage: (issue.similarity * 100), // Convert to percentage
+              contactPerson: issue.assignee || '',
+              similarity_percentage: parseFloat(issue.similarity || '0') * 100, // Convert string to percentage
               created: issue.created_on || '',
-              updated: issue.updated_on || ''
+              updated: issue.updated_on || '',
+              // New fields from updated JSON structure
+              project: issue.project,
+              root_fix_info: issue.root_fix_info,
+              cause_of_issue: issue.cause_of_issue,
+              fix_details: issue.fix_details,
+              committed_revision: issue.committed_revision,
+              mysql_query: issue.mysql_query,
+              link: issue.link
             })),
             ...(similarIssuesData.mantis || []).map((issue: any) => ({
               id: issue.id,
               title: issue.summary || issue.subject,
               description: issue.description,
-              status: issue.status?.name || 'Open',
-              priority: issue.priority?.name || 'Medium',
-              assignee: issue.handler?.name || 'Unassigned',
+              status: issue.status || 'Open',
+              priority: issue.priority || 'Medium',
+              assignee: issue.handler || 'Unassigned',
               source: 'mantis' as const,
-              contactPerson: issue.handler?.name || '',
-              similarity_percentage: (issue.similarity * 100), // Convert to percentage
+              contactPerson: issue.handler || '',
+              similarity_percentage: parseFloat(issue.similarity || '0') * 100, // Convert string to percentage
               created: issue.created_at || '',
-              updated: issue.updated_at || ''
+              updated: issue.updated_at || '',
+              // New fields from updated JSON structure
+              project: issue.project,
+              root_fix_info: issue.root_fix_info,
+              cause_of_issue: issue.cause_of_issue,
+              fix_details: issue.fix_details,
+              committed_revision: issue.committed_revision,
+              mysql_query: issue.mysql_query,
+              link: issue.link
             }))
           ];
           
@@ -700,34 +730,153 @@ export default function Issues() {
                 <Badge variant={getStatusBadgeVariant(issue.status)} data-testid={`badge-status-${issue.id}`}>
                   {issue.status}
                 </Badge>
-                <Badge variant={getPriorityBadgeVariant(issue.priority)} data-testid={`badge-priority-${issue.id}`}>
-                  {issue.priority}
+                <Badge variant={getPriorityBadgeVariant(issue.priority || 'Medium')} data-testid={`badge-priority-${issue.id}`}>
+                  {issue.priority || 'Medium'}
                 </Badge>
               </div>
               
-              {/* Additional details for similar issues - hiding Assignee as requested */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100">
-                {issue.created && (
+              {/* Enhanced details for similar issues with all new fields */}
+              <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
+                {/* Project and Status Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {issue.project && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1">Project</p>
+                      <p className="text-sm text-gray-700" data-testid={`text-project-${issue.id}`}>
+                        {issue.project}
+                      </p>
+                    </div>
+                  )}
+                  {issue.assignee && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        Assignee
+                      </p>
+                      <p className="text-sm text-gray-700" data-testid={`text-assignee-${issue.id}`}>
+                        {issue.assignee}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Dates Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {issue.created && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        Created
+                      </p>
+                      <p className="text-sm text-gray-700" data-testid={`text-created-${issue.id}`}>
+                        {new Date(issue.created).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {issue.updated && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        Updated
+                      </p>
+                      <p className="text-sm text-gray-700" data-testid={`text-updated-${issue.id}`}>
+                        {new Date(issue.updated).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Cause of Issue */}
+                {(issue.cause_of_issue || issue.root_fix_info?.cause_of_issue) && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Created
-                    </p>
-                    <p className="text-sm text-gray-700" data-testid={`text-created-${issue.id}`}>
-                      {new Date(issue.created).toLocaleDateString()}
+                    <p className="text-xs font-medium text-gray-500 mb-1">Cause of Issue</p>
+                    <p className="text-sm text-gray-700 leading-relaxed" data-testid={`text-cause-${issue.id}`}>
+                      {issue.cause_of_issue || issue.root_fix_info?.cause_of_issue}
                     </p>
                   </div>
                 )}
                 
-                {issue.updated && (
+                {/* Fix Details */}
+                {(issue.fix_details || issue.root_fix_info?.fix_details) && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 mb-1">Fix Details</p>
+                    <p className="text-sm text-gray-700 leading-relaxed" data-testid={`text-fix-details-${issue.id}`}>
+                      {issue.fix_details || issue.root_fix_info?.fix_details}
+                    </p>
+                  </div>
+                )}
+                
+                {/* MySQL Query */}
+                {(issue.mysql_query || issue.root_fix_info?.mysql_query) && (
                   <div>
                     <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      Updated
+                      <Code className="w-3 h-3" />
+                      MySQL Query
                     </p>
-                    <p className="text-sm text-gray-700" data-testid={`text-updated-${issue.id}`}>
-                      {new Date(issue.updated).toLocaleDateString()}
-                    </p>
+                    <div className="bg-gray-50 p-2 rounded border text-xs font-mono text-gray-800 max-h-20 overflow-y-auto" data-testid={`text-mysql-query-${issue.id}`}>
+                      {issue.mysql_query || issue.root_fix_info?.mysql_query}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Technical Details Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(issue.committed_revision || issue.root_fix_info?.committed_revision) && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                        <GitBranch className="w-3 h-3" />
+                        Committed Revision
+                      </p>
+                      <p className="text-sm text-gray-700 font-mono" data-testid={`text-revision-${issue.id}`}>
+                        {issue.committed_revision || issue.root_fix_info?.committed_revision}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {issue.link && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+                        <ExternalLink className="w-3 h-3" />
+                        Issue Link
+                      </p>
+                      <a 
+                        href={issue.link} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                        data-testid={`link-issue-${issue.id}`}
+                      >
+                        View in {issue.source === 'redmine' ? 'Redmine' : 'Mantis'}
+                      </a>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Root Fix Info (if available) */}
+                {issue.root_fix_info && (
+                  <div className="bg-gray-50 p-3 rounded-lg border">
+                    <p className="text-xs font-medium text-gray-500 mb-2">Root Fix Information</p>
+                    <div className="space-y-2">
+                      {issue.root_fix_info.problem_statement && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-600">Problem Statement:</p>
+                          <p className="text-sm text-gray-700">{issue.root_fix_info.problem_statement}</p>
+                        </div>
+                      )}
+                      {issue.root_fix_info.cause_of_issue && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-600">Root Cause:</p>
+                          <p className="text-sm text-gray-700">{issue.root_fix_info.cause_of_issue}</p>
+                        </div>
+                      )}
+                      {issue.root_fix_info.fix_details && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-600">Fix Details:</p>
+                          <p className="text-sm text-gray-700">{issue.root_fix_info.fix_details}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -1196,8 +1345,8 @@ export default function Issues() {
                   
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-2">Priority</h4>
-                    <Badge variant={getPriorityBadgeVariant(selectedIssueDetails.priority)} data-testid="badge-detailed-priority">
-                      {selectedIssueDetails.priority}
+                    <Badge variant={getPriorityBadgeVariant(selectedIssueDetails.priority || 'Medium')} data-testid="badge-detailed-priority">
+                      {selectedIssueDetails.priority || 'Medium'}
                     </Badge>
                   </div>
                 </div>
