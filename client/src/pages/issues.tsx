@@ -89,8 +89,6 @@ export default function Issues() {
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('ai-analysis');
   const [tempFixData, setTempFixData] = useState<any>(null);
-  const [mysqlQueryData, setMysqlQueryData] = useState<{[key: number]: any}>({});
-  const [isLoadingSqlQuery, setIsLoadingSqlQuery] = useState<{[key: number]: boolean}>({});
 
   const username = localStorage.getItem("username");
   const userFullName = localStorage.getItem("userFullName");
@@ -564,19 +562,6 @@ export default function Issues() {
     setShowNoMatches(false);
   };
 
-  const handleContinue = () => {
-    if (selectedIssue) {
-      const issue = similarIssues.find(i => i.id.toString() === selectedIssue);
-      if (issue) {
-        setSelectedIssueDetails(issue);
-        setShowDetailedView(true);
-        // Reset only relevant future actions
-        setAccuracyScore('');
-        setIsAccuracySubmitted(false);
-        setActiveDetailCard(null);
-      }
-    }
-  };
 
   const handleBackToSelection = () => {
     setShowDetailedView(false);
@@ -652,60 +637,85 @@ export default function Issues() {
     }
   };
 
-  const handleSqlQueryDetails = async (issue: SimilarIssue, e: React.MouseEvent) => {
-    e.stopPropagation();
+
+  const handleContinueWithIssue = async (issue: SimilarIssue) => {
+    setIsLoading(true);
+    setError('');
     
-    // Check if MySQL query data already exists for this issue
-    if (!mysqlQueryData[issue.id]) {
-      setIsLoadingSqlQuery(prev => ({...prev, [issue.id]: true}));
-      
-      try {
-        const authToken = localStorage.getItem("authToken");
-        const response = await fetch(`/api/mysql_query_index/${issue.id}`, {
-          method: 'GET',
-          headers: {
-            "Content-Type": "application/json",
-            ...(authToken && { "Authorization": `Bearer ${authToken}` })
-          }
-        });
+    try {
+      // Determine if this is a Redmine or Mantis issue and fetch fresh data
+      const endpoint = issue.source === 'mantis' 
+        ? 'https://maintenancebot-ai.infinitisoftware.net/api/get_mantis_issue'
+        : 'https://maintenancebot-ai.infinitisoftware.net/api/get_issue';
         
-        if (response.ok) {
-          const queryData = await response.json();
-          setMysqlQueryData(prev => ({...prev, [issue.id]: queryData}));
-          
-          // If no queries found, don't show the modal
-          if (!queryData.queryCount || queryData.queryCount === 0) {
-            setError('No MySQL queries found for this issue.');
-            setIsLoadingSqlQuery(prev => ({...prev, [issue.id]: false}));
-            return;
+      const authToken = localStorage.getItem("authToken");
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken && { "Authorization": `Bearer ${authToken}` })
+        },
+        body: JSON.stringify({ "issue_id": issue.id.toString() })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        let fetchedIssue;
+        
+        if (issue.source === 'mantis') {
+          // Handle Mantis response structure
+          const mantisIssue = data.mantis_issue?.issues?.[0];
+          if (mantisIssue) {
+            fetchedIssue = {
+              ...issue, // Keep the similarity data and other fields from the similar issues response
+              id: mantisIssue.id,
+              title: mantisIssue.summary,
+              description: mantisIssue.description || 'No description available',
+              status: mantisIssue.status.name,
+              priority: mantisIssue.priority.name,
+              assignee: mantisIssue.handler ? mantisIssue.handler.name : 'Unassigned',
+              created: mantisIssue.created_at,
+              updated: mantisIssue.updated_at
+            };
           }
         } else {
-          setError('Failed to fetch MySQL query data. Please try again.');
-          setIsLoadingSqlQuery(prev => ({...prev, [issue.id]: false}));
-          return;
+          // Handle Redmine response structure
+          const redmineIssue = data.issue;
+          if (redmineIssue) {
+            fetchedIssue = {
+              ...issue, // Keep the similarity data and other fields from the similar issues response
+              id: redmineIssue.id,
+              title: redmineIssue.subject,
+              description: redmineIssue.description || 'No description available',
+              status: redmineIssue.status.name,
+              priority: redmineIssue.priority.name,
+              assignee: redmineIssue.assigned_to ? redmineIssue.assigned_to.name : 'Unassigned',
+              created: redmineIssue.created_on,
+              updated: redmineIssue.updated_on
+            };
+          }
         }
-      } catch (error) {
-        console.error('Error fetching MySQL query data:', error);
-        setError('Network error. Please check your connection and try again.');
-        setIsLoadingSqlQuery(prev => ({...prev, [issue.id]: false}));
-        return;
+        
+        if (fetchedIssue) {
+          setSelectedIssueDetails(fetchedIssue);
+          setSelectedIssue(issue.id.toString());
+          setShowDetailedView(true);
+          // Reset only relevant future actions
+          setAccuracyScore('');
+          setIsAccuracySubmitted(false);
+          setActiveDetailCard(null);
+        } else {
+          setError("Failed to retrieve issue details.");
+        }
+      } else {
+        setError("Failed to fetch issue details. Please try again.");
       }
-      
-      setIsLoadingSqlQuery(prev => ({...prev, [issue.id]: false}));
+    } catch (err) {
+      console.error('Error fetching issue details:', err);
+      setError("Network error. Please check your connection and try again.");
     }
     
-    setSelectedSqlIssue(issue);
-    setShowSqlModal(true);
-  };
-
-  const handleContinueWithIssue = (issue: SimilarIssue) => {
-    setSelectedIssue(issue.id.toString());
-    setSelectedIssueDetails(issue);
-    setShowDetailedView(true);
-    // Reset only relevant future actions
-    setAccuracyScore('');
-    setIsAccuracySubmitted(false);
-    setActiveDetailCard(null);
+    setIsLoading(false);
   };
 
   const renderIssueCard = (issue: SimilarIssue) => {
@@ -735,151 +745,7 @@ export default function Issues() {
                 </Badge>
               </div>
               
-              {/* Enhanced details for similar issues with all new fields */}
-              <div className="mt-3 pt-3 border-t border-gray-100 space-y-3">
-                {/* Project and Status Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {issue.project && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1">Project</p>
-                      <p className="text-sm text-gray-700" data-testid={`text-project-${issue.id}`}>
-                        {issue.project}
-                      </p>
-                    </div>
-                  )}
-                  {issue.assignee && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        Assignee
-                      </p>
-                      <p className="text-sm text-gray-700" data-testid={`text-assignee-${issue.id}`}>
-                        {issue.assignee}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Dates Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {issue.created && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Created
-                      </p>
-                      <p className="text-sm text-gray-700" data-testid={`text-created-${issue.id}`}>
-                        {new Date(issue.created).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {issue.updated && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        Updated
-                      </p>
-                      <p className="text-sm text-gray-700" data-testid={`text-updated-${issue.id}`}>
-                        {new Date(issue.updated).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Cause of Issue */}
-                {(issue.cause_of_issue || issue.root_fix_info?.cause_of_issue) && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1">Cause of Issue</p>
-                    <p className="text-sm text-gray-700 leading-relaxed" data-testid={`text-cause-${issue.id}`}>
-                      {issue.cause_of_issue || issue.root_fix_info?.cause_of_issue}
-                    </p>
-                  </div>
-                )}
-                
-                {/* Fix Details */}
-                {(issue.fix_details || issue.root_fix_info?.fix_details) && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1">Fix Details</p>
-                    <p className="text-sm text-gray-700 leading-relaxed" data-testid={`text-fix-details-${issue.id}`}>
-                      {issue.fix_details || issue.root_fix_info?.fix_details}
-                    </p>
-                  </div>
-                )}
-                
-                {/* MySQL Query */}
-                {(issue.mysql_query || issue.root_fix_info?.mysql_query) && (
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                      <Code className="w-3 h-3" />
-                      MySQL Query
-                    </p>
-                    <div className="bg-gray-50 p-2 rounded border text-xs font-mono text-gray-800 max-h-20 overflow-y-auto" data-testid={`text-mysql-query-${issue.id}`}>
-                      {issue.mysql_query || issue.root_fix_info?.mysql_query}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Technical Details Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {(issue.committed_revision || issue.root_fix_info?.committed_revision) && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                        <GitBranch className="w-3 h-3" />
-                        Committed Revision
-                      </p>
-                      <p className="text-sm text-gray-700 font-mono" data-testid={`text-revision-${issue.id}`}>
-                        {issue.committed_revision || issue.root_fix_info?.committed_revision}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {issue.link && (
-                    <div>
-                      <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
-                        <ExternalLink className="w-3 h-3" />
-                        Issue Link
-                      </p>
-                      <a 
-                        href={issue.link} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                        data-testid={`link-issue-${issue.id}`}
-                      >
-                        View in {issue.source === 'redmine' ? 'Redmine' : 'Mantis'}
-                      </a>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Root Fix Info (if available) */}
-                {issue.root_fix_info && (
-                  <div className="bg-gray-50 p-3 rounded-lg border">
-                    <p className="text-xs font-medium text-gray-500 mb-2">Root Fix Information</p>
-                    <div className="space-y-2">
-                      {issue.root_fix_info.problem_statement && (
-                        <div>
-                          <p className="text-xs font-medium text-gray-600">Problem Statement:</p>
-                          <p className="text-sm text-gray-700">{issue.root_fix_info.problem_statement}</p>
-                        </div>
-                      )}
-                      {issue.root_fix_info.cause_of_issue && (
-                        <div>
-                          <p className="text-xs font-medium text-gray-600">Root Cause:</p>
-                          <p className="text-sm text-gray-700">{issue.root_fix_info.cause_of_issue}</p>
-                        </div>
-                      )}
-                      {issue.root_fix_info.fix_details && (
-                        <div>
-                          <p className="text-xs font-medium text-gray-600">Fix Details:</p>
-                          <p className="text-sm text-gray-700">{issue.root_fix_info.fix_details}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+              {/* Simplified display - only required fields */}
             </div>
             <div className="flex flex-col items-end justify-start text-right flex-shrink-0 mt-1">
               <div className="text-sm font-bold text-green-700 bg-green-100 px-3 py-2 rounded-lg border border-green-200 min-w-[85px] text-center" data-testid={`similarity-${issue.id}`}>
@@ -891,26 +757,21 @@ export default function Issues() {
           
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
             <div className="flex items-center gap-2">
-              {issue.source === 'redmine' && mysqlQueryData[issue.id]?.queryCount > 0 && (
+              {/* SQL Query Details button - only for Redmine issues with mysql_query */}
+              {issue.source === 'redmine' && (issue.mysql_query || issue.root_fix_info?.mysql_query) && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={(e) => handleSqlQueryDetails(issue, e)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedSqlIssue(issue);
+                    setShowSqlModal(true);
+                  }}
                   data-testid={`button-sql-query-${issue.id}`}
-                  disabled={isLoadingSqlQuery[issue.id]}
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200 disabled:opacity-50"
+                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200"
                 >
-                  {isLoadingSqlQuery[issue.id] ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      <Code className="w-4 h-4 mr-1" />
-                      SQL Query Details
-                    </>
-                  )}
+                  <Code className="w-4 h-4 mr-1" />
+                  SQL Query Details
                 </Button>
               )}
             </div>
@@ -1456,7 +1317,8 @@ export default function Issues() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons - Only for Redmine issues */}
+              {selectedIssueDetails.source === 'redmine' && (
               <div className="border-t border-gray-200 pt-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-6">Available Actions</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1500,6 +1362,7 @@ export default function Issues() {
                   </Button>
                 </div>
               </div>
+              )}
 
               {/* Detail Cards */}
               {activeDetailCard === 'fix' && (
@@ -1520,28 +1383,15 @@ export default function Issues() {
                     </Button>
                   </div>
                   <div className="bg-white rounded-xl p-5 shadow-inner border border-blue-150">
-                    <ul className="space-y-3 text-gray-800">
-                      <li className="flex items-start gap-2">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                        <span>Updated authentication middleware to handle edge cases</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                        <span>Added comprehensive error handling for login failures</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                        <span>Fixed session management timeout issues</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                        <span>Deployed hotfix version 2.1.3 to production</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                        <span className="font-medium text-green-800">Status: Successfully resolved and deployed</span>
-                      </li>
-                    </ul>
+                    <div className="text-gray-800" data-testid="fix-details-content">
+                      {(selectedIssueDetails.fix_details || selectedIssueDetails.root_fix_info?.fix_details) ? (
+                        <p className="leading-relaxed">
+                          {selectedIssueDetails.fix_details || selectedIssueDetails.root_fix_info?.fix_details}
+                        </p>
+                      ) : (
+                        <p className="text-gray-500 italic">No fix details available for this issue.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1564,23 +1414,14 @@ export default function Issues() {
                     </Button>
                   </div>
                   <div className="bg-white rounded-xl p-5 shadow-inner border border-orange-150">
-                    <div className="space-y-4 text-gray-800">
-                      <div>
-                        <h5 className="font-semibold text-orange-800 mb-2">Primary Cause:</h5>
-                        <p>Issue caused by outdated session validation library that didn't handle concurrent login attempts properly.</p>
-                      </div>
-                      <div>
-                        <h5 className="font-semibold text-orange-800 mb-2">Contributing Factors:</h5>
-                        <ul className="space-y-1 ml-4">
-                          <li>• Missing error handling in authentication module</li>
-                          <li>• Race condition in login process during peak hours</li>
-                          <li>• Insufficient logging for debugging login failures</li>
-                        </ul>
-                      </div>
-                      <div>
-                        <h5 className="font-semibold text-orange-800 mb-2">Impact Assessment:</h5>
-                        <p>Affected approximately 15% of daily active users during peak login times, resulting in increased support tickets and user frustration.</p>
-                      </div>
+                    <div className="text-gray-800" data-testid="rca-details-content">
+                      {(selectedIssueDetails.cause_of_issue || selectedIssueDetails.root_fix_info?.cause_of_issue) ? (
+                        <p className="leading-relaxed">
+                          {selectedIssueDetails.cause_of_issue || selectedIssueDetails.root_fix_info?.cause_of_issue}
+                        </p>
+                      ) : (
+                        <p className="text-gray-500 italic">No root cause analysis available for this issue.</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1604,34 +1445,29 @@ export default function Issues() {
                     </Button>
                   </div>
                   <div className="bg-white rounded-xl p-5 shadow-inner border border-purple-150">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-800">
-                      <div className="space-y-3">
-                        <div>
-                          <span className="font-semibold text-purple-800">Commit:</span>
-                          <span className="ml-2 font-mono bg-gray-100 px-2 py-1 rounded">r4521</span>
+                    <div className="text-gray-800" data-testid="svn-details-content">
+                      {(selectedIssueDetails.committed_revision || selectedIssueDetails.root_fix_info?.committed_revision) ? (
+                        <div className="space-y-3">
+                          <div>
+                            <span className="font-semibold text-purple-800">Committed Revision:</span>
+                            <span className="ml-2 font-mono bg-gray-100 px-2 py-1 rounded">
+                              {selectedIssueDetails.committed_revision || selectedIssueDetails.root_fix_info?.committed_revision}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-semibold text-purple-800">Author:</span>
+                            <span className="ml-2">{selectedIssueDetails.assignee || 'Unknown'}</span>
+                          </div>
+                          {selectedIssueDetails.updated && (
+                            <div>
+                              <span className="font-semibold text-purple-800">Date:</span>
+                              <span className="ml-2">{new Date(selectedIssueDetails.updated).toLocaleString()}</span>
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <span className="font-semibold text-purple-800">Author:</span>
-                          <span className="ml-2">{selectedIssueDetails.assignee}</span>
-                        </div>
-                        <div>
-                          <span className="font-semibold text-purple-800">Date:</span>
-                          <span className="ml-2">2024-01-22 14:30:00</span>
-                        </div>
-                        <div>
-                          <span className="font-semibold text-purple-800">Branch:</span>
-                          <span className="ml-2 font-mono bg-gray-100 px-2 py-1 rounded">hotfix/login-fixes</span>
-                        </div>
-                      </div>
-                      <div>
-                        <h5 className="font-semibold text-purple-800 mb-2">Modified Files:</h5>
-                        <ul className="space-y-1 font-mono text-sm">
-                          <li className="bg-gray-100 px-2 py-1 rounded">src/auth/auth.js</li>
-                          <li className="bg-gray-100 px-2 py-1 rounded">src/session/session.js</li>
-                          <li className="bg-gray-100 px-2 py-1 rounded">public/login.html</li>
-                          <li className="bg-gray-100 px-2 py-1 rounded">tests/auth.test.js</li>
-                        </ul>
-                      </div>
+                      ) : (
+                        <p className="text-gray-500 italic">No SVN details available for this issue.</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1829,34 +1665,24 @@ export default function Issues() {
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                       <Code className="w-5 h-5" />
-                      MySQL Query Index ({mysqlQueryData[selectedSqlIssue.id]?.queryCount || 0} queries found)
+                      MySQL Query Details
                     </h3>
-                    {mysqlQueryData[selectedSqlIssue.id]?.queries?.length > 0 ? (
-                      <div className="space-y-4">
-                        {mysqlQueryData[selectedSqlIssue.id].queries.map((query: any, index: number) => (
-                          <div key={query.id || index} className="border border-gray-200 rounded-lg overflow-hidden">
-                            <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
-                              <div className="flex items-center justify-between">
-                                <h4 className="font-medium text-gray-900">{query.description}</h4>
-                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                  <span>Execution: {query.executionTime}ms</span>
-                                  <span>Results: {query.resultCount}</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
-                              <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap" data-testid={`sql-query-content-${index}`}>
-                                {query.query}
-                              </pre>
-                            </div>
-                          </div>
-                        ))}
+                    {(selectedSqlIssue.mysql_query || selectedSqlIssue.root_fix_info?.mysql_query) ? (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
+                          <h4 className="font-medium text-gray-900">SQL Query for Issue #{selectedSqlIssue.id}</h4>
+                        </div>
+                        <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                          <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap" data-testid="sql-query-content">
+                            {selectedSqlIssue.mysql_query || selectedSqlIssue.root_fix_info?.mysql_query}
+                          </pre>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border border-gray-200">
                         <Code className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                        <p className="text-lg font-medium">No MySQL queries found</p>
-                        <p className="text-sm">No query index data available for this issue.</p>
+                        <p className="text-lg font-medium">No MySQL query found</p>
+                        <p className="text-sm">This issue doesn't have any associated SQL query data.</p>
                       </div>
                     )}
                   </div>
