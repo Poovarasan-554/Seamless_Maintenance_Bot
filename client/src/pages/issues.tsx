@@ -1261,7 +1261,7 @@ export default function Issues() {
                   <a
                     href={selectedIssueDetails.source === 'redmine' 
                       ? `https://pmt.infinitisoftware.net/issues/${selectedIssueDetails.id}`
-                      : `https://mantis.company.com/view.php?id=${selectedIssueDetails.id}`
+                      : `https://bugtracker.atyourprice.net/view.php?id=${selectedIssueDetails.id}`
                     }
                     target="_blank"
                     rel="noopener noreferrer"
