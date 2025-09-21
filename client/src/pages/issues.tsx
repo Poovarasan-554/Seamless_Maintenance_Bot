@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertCircle, Search, Loader2, LogOut, User, Calendar, Clock, ArrowLeft, Eye, Code, GitBranch, X, CheckCircle, Edit, ExternalLink } from "lucide-react";
-import { stripHtmlTags } from "@/lib/utils";
+import { stripHtmlTags, formatToIST } from "@/lib/utils";
 
 interface IssueDetails {
   id: number;
@@ -89,10 +89,21 @@ export default function Issues() {
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('ai-analysis');
   const [tempFixData, setTempFixData] = useState<any>(null);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const username = localStorage.getItem("username");
   const userFullName = localStorage.getItem("userFullName");
   const displayName = userFullName || username || "Guest"; // Prefer userFullName, then username, then Guest
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Mock data removed - now using API data exclusively
 
@@ -482,6 +493,7 @@ export default function Issues() {
               assignee: issue.assignee || 'Unassigned',
               source: 'redmine' as const,
               contactPerson: issue.assignee || '',
+              closedBy: issue.closed_by || issue.author || '',
               similarity_percentage: parseFloat(issue.similarity || '0') * 100, // Convert string to percentage
               created: issue.created_on || '',
               updated: issue.updated_on || '',
@@ -503,6 +515,7 @@ export default function Issues() {
               assignee: issue.handler || 'Unassigned',
               source: 'mantis' as const,
               contactPerson: issue.handler || '',
+              closedBy: issue.closed_by || issue.handler || '',
               similarity_percentage: parseFloat(issue.similarity || '0') * 100, // Convert string to percentage
               created: issue.created_at || '',
               updated: issue.updated_at || '',
@@ -525,6 +538,12 @@ export default function Issues() {
             // Fetch temp fix data with API response and set active tab to AI Analysis
             fetchTempFixData(data);
             setActiveTab('ai-analysis');
+            
+            // Show success animation
+            setShowSuccessAnimation(true);
+            successTimeoutRef.current = setTimeout(() => {
+              setShowSuccessAnimation(false);
+            }, 3000); // Hide after 3 seconds
           } else {
             setShowNoMatches(true);
             setShowSimilar(false);
@@ -791,6 +810,31 @@ export default function Issues() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 py-8 px-4">
+      {/* Success Animation Overlay */}
+      {showSuccessAnimation && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" data-testid="success-animation-overlay">
+          <div className="bg-white rounded-2xl p-8 flex flex-col items-center space-y-6 shadow-2xl border-4 border-green-400 animate-pulse">
+            <div className="relative">
+              <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center animate-bounce">
+                <CheckCircle className="w-12 h-12 text-white" />
+              </div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-spin">
+                <span className="text-2xl">✨</span>
+              </div>
+            </div>
+            <div className="text-center">
+              <h3 className="text-2xl font-bold text-green-600 mb-2 animate-pulse">Success!</h3>
+              <p className="text-gray-700 font-medium">Similar issues found successfully!</p>
+              <p className="text-sm text-gray-500 mt-1">Analyzing results...</p>
+            </div>
+            <div className="flex space-x-2">
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="w-3 h-3 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Center Screen Loader Overlay */}
       {isLoadingSimilar && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" data-testid="loader-overlay">
@@ -1017,11 +1061,11 @@ export default function Issues() {
                   </div>
                   <div>
                     <span className="font-medium text-gray-500">Created:</span>
-                    <p className="text-gray-700 mt-1" data-testid="text-created">{issueDetails.created}</p>
+                    <p className="text-gray-700 mt-1" data-testid="text-created">{formatToIST(issueDetails.created)}</p>
                   </div>
                   <div>
                     <span className="font-medium text-gray-500">Updated:</span>
-                    <p className="text-gray-700 mt-1" data-testid="text-updated">{issueDetails.updated}</p>
+                    <p className="text-gray-700 mt-1" data-testid="text-updated">{formatToIST(issueDetails.updated)}</p>
                   </div>
                 </div>
                 
@@ -1219,9 +1263,22 @@ export default function Issues() {
                         <User className="w-4 h-4" />
                         Contact Person
                       </h4>
-                      <p className="text-gray-900" data-testid="text-contact-person">
-                        {selectedIssueDetails.closedBy || selectedIssueDetails.contactPerson}
-                      </p>
+                      <div className="space-y-3">
+                        {selectedIssueDetails.closedBy && (
+                          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                            <span className="font-medium text-green-700">Closed by:</span>
+                            <span className="ml-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium" data-testid="text-closed-by">
+                              {selectedIssueDetails.closedBy}
+                            </span>
+                          </div>
+                        )}
+                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                          <span className="font-medium text-blue-700">Contact:</span>
+                          <span className="ml-2 text-gray-900" data-testid="text-contact-person">
+                            {selectedIssueDetails.contactPerson || 'Not specified'}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -1242,9 +1299,7 @@ export default function Issues() {
                       Created
                     </h4>
                     <p className="text-gray-700 text-sm" data-testid="text-detailed-created">
-                      {selectedIssueDetails.created ? 
-                        (new Date(selectedIssueDetails.created).toLocaleDateString() + ' ' + new Date(selectedIssueDetails.created).toLocaleTimeString()) 
-                        : 'Not available'}
+                      {selectedIssueDetails.created ? formatToIST(selectedIssueDetails.created) : 'Not available'}
                     </p>
                   </div>
                   
@@ -1254,9 +1309,7 @@ export default function Issues() {
                       Last Updated
                     </h4>
                     <p className="text-gray-700 text-sm" data-testid="text-detailed-updated">
-                      {selectedIssueDetails.updated ? 
-                        (new Date(selectedIssueDetails.updated).toLocaleDateString() + ' ' + new Date(selectedIssueDetails.updated).toLocaleTimeString()) 
-                        : 'Not available'}
+                      {selectedIssueDetails.updated ? formatToIST(selectedIssueDetails.updated) : 'Not available'}
                     </p>
                   </div>
                 </div>
@@ -1461,7 +1514,7 @@ export default function Issues() {
                           {selectedIssueDetails.updated && (
                             <div>
                               <span className="font-semibold text-purple-800">Date:</span>
-                              <span className="ml-2">{new Date(selectedIssueDetails.updated).toLocaleString()}</span>
+                              <span className="ml-2">{formatToIST(selectedIssueDetails.updated)}</span>
                             </div>
                           )}
                         </div>
