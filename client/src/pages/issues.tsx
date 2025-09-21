@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { AlertCircle, Search, Loader2, LogOut, User, Calendar, Clock, ArrowLeft, Eye, Code, GitBranch, X, CheckCircle, Edit, ExternalLink } from "lucide-react";
+import { AlertCircle, Search, Loader2, LogOut, User, Calendar, Clock, ArrowLeft, Eye, Code, GitBranch, X, CheckCircle, Edit, ExternalLink, History, HelpCircle, Info } from "lucide-react";
 import { stripHtmlTags, formatToIST } from "@/lib/utils";
 
 interface IssueDetails {
@@ -90,6 +90,8 @@ export default function Issues() {
   const [activeTab, setActiveTab] = useState<string>('ai-analysis');
   const [tempFixData, setTempFixData] = useState<any>(null);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showUserGuideModal, setShowUserGuideModal] = useState(false);
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const username = localStorage.getItem("username");
@@ -117,7 +119,7 @@ export default function Issues() {
     localStorage.removeItem("username");
     localStorage.removeItem("userFullName"); // Remove full name to prevent stale data
     localStorage.removeItem("authToken");
-    setLocation("/login");
+    setLocation("/thank-you");
   };
 
   const resetAllFutureActions = () => {
@@ -555,9 +557,9 @@ export default function Issues() {
             setAiAnalysis(analysis);
             setShowSimilar(true);
             setShowNoMatches(false);
-            // Fetch temp fix data with API response and set active tab to AI Analysis
+            // Fetch temp fix data with API response and set active tab to AI Analysis if available, otherwise similar issues
             fetchTempFixData(data);
-            setActiveTab('ai-analysis');
+            setActiveTab(aiAnalysis ? 'ai-analysis' : 'similar-issues');
             
             // Show success animation
             setShowSuccessAnimation(true);
@@ -785,13 +787,6 @@ export default function Issues() {
                 <Badge className={getPriorityBadgeStyle(issue.priority || 'Medium')} data-testid={`badge-priority-${issue.id}`}>
                   {issue.priority || 'Medium'}
                 </Badge>
-                {/* Contact Person badge - only for Redmine issues with closedBy information */}
-                {issue.source === 'redmine' && issue.closedBy && (
-                  <Badge variant="outline" className="text-purple-600 border-purple-200 bg-purple-50" data-testid={`badge-contact-${issue.id}`}>
-                    <User className="w-3 h-3 mr-1" />
-                    Contact: {issue.closedBy}
-                  </Badge>
-                )}
               </div>
               
               {/* Simplified display - only required fields */}
@@ -824,22 +819,6 @@ export default function Issues() {
                 </Button>
               )}
               
-              {/* View in Mantis button - only for Mantis issues */}
-              {issue.source === 'mantis' && issue.link && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(issue.link, '_blank', 'noopener,noreferrer');
-                  }}
-                  data-testid={`button-view-mantis-${issue.id}`}
-                  className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200 hover:border-blue-300 transition-all duration-200"
-                >
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  View in Mantis
-                </Button>
-              )}
             </div>
             
             <Button
@@ -912,15 +891,34 @@ export default function Issues() {
             </h1>
             <p className="text-lg text-gray-600">Welcome back, {displayName}! 🎉</p>
           </div>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            data-testid="button-logout"
-            className="flex items-center gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => setShowUserGuideModal(true)}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-user-guide"
+                  className="flex items-center gap-2 hover:bg-blue-50 border-blue-200"
+                >
+                  <HelpCircle className="w-4 h-4 text-blue-600" />
+                  User Guide
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View step-by-step guide on how to use the application</p>
+              </TooltipContent>
+            </Tooltip>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              data-testid="button-logout"
+              className="flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Issue Type Selection */}
@@ -1277,6 +1275,16 @@ export default function Issues() {
                     <ExternalLink className="w-4 h-4 mr-1.5" />
                     View in {selectedIssueDetails.source === 'redmine' ? 'Redmine' : 'Mantis'}
                   </a>
+                  <Button
+                    onClick={() => setShowHistoryModal(true)}
+                    variant="outline"
+                    size="sm"
+                    data-testid="button-view-history"
+                    className="inline-flex items-center text-sm px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 hover:shadow-md"
+                  >
+                    <History className="w-4 h-4 mr-1.5" />
+                    View History
+                  </Button>
                 </div>
                 <Badge className={getStatusBadgeStyle(selectedIssueDetails.status)} data-testid="badge-detailed-status">
                   {selectedIssueDetails.status}
@@ -1318,30 +1326,6 @@ export default function Issues() {
                 </div>
 
                 <div className="space-y-4">
-                  {(selectedIssueDetails.status === 'Closed' || selectedIssueDetails.status === 'Resolved') && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        Contact Person
-                      </h4>
-                      <div className="space-y-3">
-                        {selectedIssueDetails.closedBy && (
-                          <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                            <span className="font-medium text-green-700">Closed by:</span>
-                            <span className="ml-2 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium" data-testid="text-closed-by">
-                              {selectedIssueDetails.closedBy}
-                            </span>
-                          </div>
-                        )}
-                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                          <span className="font-medium text-blue-700">Contact:</span>
-                          <span className="ml-2 text-gray-900" data-testid="text-contact-person">
-                            {selectedIssueDetails.contactPerson || 'Not specified'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
 
                   {selectedIssueDetails.resolution && (
                     <div>
@@ -1595,13 +1579,15 @@ export default function Issues() {
           <Card className="p-8 shadow-xl border-0 bg-gradient-to-br from-white to-indigo-50 rounded-2xl" data-testid="container-tabbed-results">
             <CardContent className="p-0">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-8">
-                  <TabsTrigger 
-                    value="ai-analysis" 
-                    data-testid="tab-ai-analysis"
-                  >
-                    🤖 AI Analysis & Recommendation
-                  </TabsTrigger>
+                <TabsList className={`grid w-full mb-8 ${aiAnalysis ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                  {aiAnalysis && (
+                    <TabsTrigger 
+                      value="ai-analysis" 
+                      data-testid="tab-ai-analysis"
+                    >
+                      🤖 AI Analysis & Recommendation
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger 
                     value="similar-issues" 
                     data-testid="tab-similar-issues"
@@ -1852,6 +1838,252 @@ export default function Issues() {
                           <li>• created_date (TIMESTAMP)</li>
                         </ul>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* History Modal */}
+        {showHistoryModal && selectedIssueDetails && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" data-testid="modal-history">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-auto">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <History className="w-6 h-6 text-green-600" />
+                    Issue History - #{selectedIssueDetails.id}
+                  </h2>
+                  <Button
+                    onClick={() => setShowHistoryModal(false)}
+                    variant="ghost"
+                    size="sm"
+                    data-testid="button-close-history-modal"
+                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-2"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Issue Summary */}
+                  <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                    <h3 className="font-semibold text-green-900 mb-2">Issue Summary</h3>
+                    <p className="text-green-800">{selectedIssueDetails.title}</p>
+                  </div>
+                  
+                  {/* History Timeline */}
+                  <div>
+                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <History className="w-5 h-5" />
+                      Timeline History
+                    </h3>
+                    <div className="space-y-4">
+                      {/* Created */}
+                      {selectedIssueDetails.created && (
+                        <div className="flex gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex-shrink-0 w-3 h-3 bg-blue-500 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-blue-900">Issue Created</span>
+                              <span className="text-sm text-blue-700">{formatToIST(selectedIssueDetails.created)}</span>
+                            </div>
+                            <p className="text-sm text-blue-800">
+                              Issue was created by {selectedIssueDetails.assignee || 'Unknown'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Last Updated */}
+                      {selectedIssueDetails.updated && (
+                        <div className="flex gap-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+                          <div className="flex-shrink-0 w-3 h-3 bg-amber-500 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-amber-900">Last Updated</span>
+                              <span className="text-sm text-amber-700">{formatToIST(selectedIssueDetails.updated)}</span>
+                            </div>
+                            <p className="text-sm text-amber-800">
+                              Issue was last modified
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Current Status */}
+                      <div className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex-shrink-0 w-3 h-3 bg-gray-500 rounded-full mt-2"></div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-gray-900">Current Status</span>
+                            <Badge className={getStatusBadgeStyle(selectedIssueDetails.status)}>
+                              {selectedIssueDetails.status}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Issue is currently {selectedIssueDetails.status.toLowerCase()} - Priority: {selectedIssueDetails.priority || 'Medium'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Resolution (if available) */}
+                      {selectedIssueDetails.resolution && (
+                        <div className="flex gap-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                          <div className="flex-shrink-0 w-3 h-3 bg-green-500 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-green-900">Resolution</span>
+                            </div>
+                            <p className="text-sm text-green-800">
+                              {selectedIssueDetails.resolution}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Note */}
+                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <p className="text-sm text-gray-600">
+                      <strong>Note:</strong> This history shows the basic timeline of the issue. For detailed commit history and technical changes, 
+                      please refer to the respective project management system.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* User Guide Modal */}
+        {showUserGuideModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" data-testid="modal-user-guide">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+              <div className="p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                    <HelpCircle className="w-6 h-6 text-blue-600" />
+                    User Guide - How to Use the Application
+                  </h2>
+                  <Button
+                    onClick={() => setShowUserGuideModal(false)}
+                    variant="ghost"
+                    size="sm"
+                    data-testid="button-close-user-guide-modal"
+                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-2"
+                  >
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+                
+                <div className="space-y-6">
+                  {/* Getting Started */}
+                  <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-4 flex items-center gap-2">
+                      <Info className="w-5 h-5" />
+                      Getting Started
+                    </h3>
+                    <p className="text-blue-800 mb-4">
+                      This application helps you search and analyze issues from Redmine and Mantis systems, and find similar issues with AI-powered recommendations.
+                    </p>
+                    <div className="space-y-2 text-sm text-blue-700">
+                      <p><strong>Step 1:</strong> Choose your issue type (Redmine ID, Mantis ID, or Problem Statement)</p>
+                      <p><strong>Step 2:</strong> Enter your issue ID or describe your problem</p>
+                      <p><strong>Step 3:</strong> Click "Fetch Issue" or "Fetch Similar Issues"</p>
+                      <p><strong>Step 4:</strong> Review the results and AI analysis</p>
+                    </div>
+                  </div>
+
+                  {/* Feature Guide */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Feature Guide</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <h4 className="font-medium text-green-900 mb-2">🔍 Issue Search</h4>
+                        <p className="text-sm text-green-800">
+                          Search for specific issues by ID or describe a problem statement to find similar issues automatically.
+                        </p>
+                      </div>
+                      <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                        <h4 className="font-medium text-purple-900 mb-2">🤖 AI Analysis</h4>
+                        <p className="text-sm text-purple-800">
+                          Get AI-powered insights and recommendations based on similar issues found in the database.
+                        </p>
+                      </div>
+                      <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                        <h4 className="font-medium text-orange-900 mb-2">📋 Similar Issues</h4>
+                        <p className="text-sm text-orange-800">
+                          View related issues from both Redmine and Mantis systems with similarity percentages.
+                        </p>
+                      </div>
+                      <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
+                        <h4 className="font-medium text-cyan-900 mb-2">🔧 Temp Fix Details</h4>
+                        <p className="text-sm text-cyan-800">
+                          Access migration queries and technical fixes for resolving similar issues.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Detailed Steps */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Step-by-Step Instructions</h3>
+                    <div className="space-y-4">
+                      <div className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-1">Select Issue Type</h4>
+                          <p className="text-sm text-gray-600">
+                            Choose between Redmine ID (for Redmine issues), Mantis ID (for Mantis issues), or Problem Statement (to describe your issue).
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-1">Enter Information</h4>
+                          <p className="text-sm text-gray-600">
+                            Input your issue ID (numeric) or write a detailed problem statement describing the issue you're experiencing.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">3</div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-1">Fetch Results</h4>
+                          <p className="text-sm text-gray-600">
+                            Click "Fetch Issue" to get issue details, then "Fetch Similar Issues" to find related problems and get AI analysis.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold text-sm">4</div>
+                        <div>
+                          <h4 className="font-medium text-gray-900 mb-1">Review & Analyze</h4>
+                          <p className="text-sm text-gray-600">
+                            Browse through the AI Analysis, Similar Issues, and Temp Fix Details tabs. Click "Continue with this issue" for detailed views.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tips & Tricks */}
+                  <div className="bg-amber-50 rounded-xl p-6 border border-amber-200">
+                    <h3 className="text-lg font-semibold text-amber-900 mb-4">💡 Tips & Tricks</h3>
+                    <div className="space-y-2 text-sm text-amber-800">
+                      <p>• Use specific issue IDs for exact matches, or problem statements for broader searches</p>
+                      <p>• Check similarity percentages to find the most relevant matches</p>
+                      <p>• Use the "View History" button in detailed views to see issue timelines</p>
+                      <p>• Click on external links to view issues in their original systems</p>
+                      <p>• Rate the accuracy of similar issues to help improve the system</p>
                     </div>
                   </div>
                 </div>

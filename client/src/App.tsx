@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Login from "@/pages/login";
 import Issues from "@/pages/issues";
+import Welcome from "@/pages/welcome";
+import ThankYou from "@/pages/thank-you";
 import NotFound from "@/pages/not-found";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AuthRedirect from "@/components/AuthRedirect";
@@ -13,11 +15,17 @@ function Router() {
   return (
     <Switch>
       <Route path="/login" component={Login} />
+      <Route path="/welcome">
+        <ProtectedRoute>
+          <Welcome />
+        </ProtectedRoute>
+      </Route>
       <Route path="/issues">
         <ProtectedRoute>
           <Issues />
         </ProtectedRoute>
       </Route>
+      <Route path="/thank-you" component={ThankYou} />
       <Route path="/" component={AuthRedirect} />
       {/* Fallback to 404 */}
       <Route component={NotFound} />

@@ -46,7 +46,7 @@ export default function Login() {
         localStorage.setItem("username", result.user.username);
         localStorage.setItem("userFullName", result.user.fullName || result.user.username); // Use username as fallback for fullName
         localStorage.setItem("authToken", result.token);
-        setLocation("/issues");
+        setLocation("/welcome");
       } else {
         const error = await response.json();
         setError(error.detail || "Invalid username or password");
