@@ -1611,11 +1611,106 @@ export default function Issues() {
                         </h2>
                       </div>
                       <div className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-inner">
-                        <div className="prose prose-purple max-w-none">
-                          <div className="whitespace-pre-wrap text-gray-800 leading-relaxed" data-testid="text-ai-analysis">
-                            {aiAnalysis}
-                          </div>
-                        </div>
+                        {(() => {
+                          try {
+                            // Try to parse as JSON
+                            const parsed = JSON.parse(aiAnalysis);
+                            
+                            // Helper function to clean text from JSON formatting
+                            const cleanText = (text: any): string => {
+                              if (typeof text !== 'string') return String(text || '');
+                              return text
+                                .replace(/[{}\[\]"]/g, '') // Remove curly braces, square brackets, and quotes
+                                .trim();
+                            };
+
+                            return (
+                              <div className="space-y-8">
+                                {/* Probable Causes Section */}
+                                {parsed.probable_causes && (
+                                  <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg border border-red-200">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Probable Causes</h3>
+                                    {Array.isArray(parsed.probable_causes) ? (
+                                      parsed.probable_causes.map((cause: any, index: number) => (
+                                        <div key={index} className="mb-4">
+                                          <p className="text-gray-800 leading-relaxed mb-2">
+                                            {typeof cause === 'string' ? cleanText(cause) : cleanText(cause.cause || cause.description || '')}
+                                          </p>
+                                          {cause.evidences && Array.isArray(cause.evidences) && cause.evidences.length > 0 && (
+                                            <ul className="ml-6 mt-2 space-y-1">
+                                              {cause.evidences.map((evidence: any, evidenceIndex: number) => (
+                                                <li key={evidenceIndex} className="text-gray-700 list-disc">
+                                                  {cleanText(evidence)}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          )}
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <p className="text-gray-800 leading-relaxed">{cleanText(parsed.probable_causes)}</p>
+                                    )}
+                                  </div>
+                                )}
+
+                                {/* Step by Step Fix Section */}
+                                {parsed.step_by_step_fix && (
+                                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Step by Step Fix</h3>
+                                    <ul className="ml-6 space-y-2">
+                                      {Array.isArray(parsed.step_by_step_fix) ? (
+                                        parsed.step_by_step_fix.map((step: any, index: number) => (
+                                          <li key={index} className="text-gray-800 leading-relaxed list-disc">
+                                            {cleanText(step)}
+                                          </li>
+                                        ))
+                                      ) : (
+                                        <li className="text-gray-800 leading-relaxed list-disc">{cleanText(parsed.step_by_step_fix)}</li>
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                {/* Follow-up Checks Section */}
+                                {parsed.follow_up_checks && (
+                                  <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Follow-up Checks</h3>
+                                    <ul className="ml-6 space-y-2">
+                                      {Array.isArray(parsed.follow_up_checks) ? (
+                                        parsed.follow_up_checks.map((check: any, index: number) => (
+                                          <li key={index} className="text-gray-800 leading-relaxed list-disc">
+                                            {cleanText(check)}
+                                          </li>
+                                        ))
+                                      ) : (
+                                        <li className="text-gray-800 leading-relaxed list-disc">{cleanText(parsed.follow_up_checks)}</li>
+                                      )}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                {/* Temporary Workaround Section */}
+                                {parsed.temporary_workaround && (
+                                  <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Temporary Workaround</h3>
+                                    <p className="text-gray-800 leading-relaxed">
+                                      {cleanText(parsed.temporary_workaround)}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          } catch (e) {
+                            // If parsing fails, display as plain text (fallback)
+                            return (
+                              <div className="prose prose-purple max-w-none">
+                                <div className="whitespace-pre-wrap text-gray-800 leading-relaxed" data-testid="text-ai-analysis">
+                                  {aiAnalysis}
+                                </div>
+                              </div>
+                            );
+                          }
+                        })()}
                       </div>
                     </div>
                   ) : (
