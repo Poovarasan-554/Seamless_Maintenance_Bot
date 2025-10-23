@@ -1,0 +1,39 @@
+Kindly update the React code with the following changes:
+
+1. **AI Analysis & Recommendations Data Check**
+   - Verify that the “AI Analysis & Recommendations” details (Probable Causes, Step by Step Fix, Follow up Checks, Temporary Workaround) are fetched correctly from the backend API.
+   - If any field is missing or empty, show a fallback message: “No data available for this section.”
+   - Ensure data refresh happens automatically whenever the issue ID changes.
+
+2. **Enable and Animate “Recent Searches” Link**
+   - Add a “Recent Searches” link on the dashboard.
+   - The link should start from the **left-hand side** and animate **toward the right-hand side** using a smooth sliding animation.
+   - Add a small **human animation image** (use Lottie or animated SVG) that visually pulls the link from left to right.
+   - Use Tailwind and Framer Motion for the animation effect.
+
+3. **Recent Searches Modal/Drawer**
+   - When clicking on the “Recent Searches” link, display a modal or right-side drawer.
+   - Inside the modal, list all **recently searched Redmine IDs, Mantis IDs, and Problem Statements**.
+   - Each entry should display:
+     - ID / Problem Statement text
+     - Timestamp (formatted as `DD MMM YYYY, hh:mm A`)
+   - Display data in **descending order** of timestamp (most recent first).
+
+4. **Auto-fill on Selection**
+   - When a user clicks on any recent Redmine ID, Mantis ID, or Problem Statement:
+     - Automatically populate the input box with the selected ID or problem statement.
+     - Trigger the same backend fetch logic as when the user manually enters it.
+
+5. **Filter Recent Searches by Radio Button**
+   - Add a filter logic:
+     - If the “Mantis” radio button is selected, show only **Mantis** recent searches.
+     - If the “Redmine” radio button is selected, show only **Redmine** recent searches.
+     - If “Problem Statement” radio is selected, show only **Problem Statement** recent searches.
+   - Display the results in **descending order** (newest first).
+   - Maintain this state even after closing and reopening the modal.
+
+6. **Optional Enhancement**
+   - Store the recent searches in `localStorage` to persist them between sessions.
+   - Limit stored searches to the latest 10 entries.
+
+Ensure all UI elements are responsive and align with the current dashboard styling.

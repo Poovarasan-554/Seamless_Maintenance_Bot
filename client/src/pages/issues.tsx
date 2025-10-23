@@ -11,6 +11,62 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertCircle, Search, Loader2, LogOut, User, Calendar, Clock, ArrowLeft, Eye, Code, GitBranch, X, CheckCircle, Edit, ExternalLink, History, HelpCircle, Info } from "lucide-react";
 import { stripHtmlTags, formatToIST } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface RecentSearch {
+  id: string;
+  type: 'redmine' | 'mantis' | 'problem';
+  value: string;
+  timestamp: number;
+}
+
+// LocalStorage utilities for recent searches
+const RECENT_SEARCHES_KEY = 'issue_tracker_recent_searches';
+const MAX_RECENT_SEARCHES = 10;
+
+const getRecentSearches = (): RecentSearch[] => {
+  try {
+    const stored = localStorage.getItem(RECENT_SEARCHES_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveRecentSearch = (type: 'redmine' | 'mantis' | 'problem', value: string) => {
+  const searches = getRecentSearches();
+  
+  // Don't add duplicates
+  const isDuplicate = searches.some(
+    s => s.type === type && s.value.toLowerCase() === value.toLowerCase()
+  );
+  
+  if (isDuplicate) return;
+  
+  const newSearch: RecentSearch = {
+    id: `${type}-${value}-${Date.now()}`,
+    type,
+    value,
+    timestamp: Date.now()
+  };
+  
+  // Add to beginning and limit to MAX_RECENT_SEARCHES
+  const updatedSearches = [newSearch, ...searches].slice(0, MAX_RECENT_SEARCHES);
+  
+  try {
+    localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updatedSearches));
+  } catch (error) {
+    console.error('Failed to save recent search:', error);
+  }
+};
+
+const clearRecentSearches = () => {
+  try {
+    localStorage.removeItem(RECENT_SEARCHES_KEY);
+  } catch (error) {
+    console.error('Failed to clear recent searches:', error);
+  }
+};
 
 interface IssueDetails {
   id: number;
@@ -92,11 +148,28 @@ export default function Issues() {
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showUserGuideModal, setShowUserGuideModal] = useState(false);
+  const [showRecentSearches, setShowRecentSearches] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [recentSearchFilter, setRecentSearchFilter] = useState<'all' | 'redmine' | 'mantis' | 'problem'>('all');
   const successTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const username = localStorage.getItem("username");
   const userFullName = localStorage.getItem("userFullName");
   const displayName = userFullName || username || "Guest"; // Prefer userFullName, then username, then Guest
+
+  // Load recent searches on mount
+  useEffect(() => {
+    setRecentSearches(getRecentSearches());
+  }, []);
+
+  // Update recent searches when modal opens
+  useEffect(() => {
+    if (showRecentSearches) {
+      setRecentSearches(getRecentSearches());
+      // Set filter based on current issue type
+      setRecentSearchFilter(issueType === 'problem' ? 'problem' : issueType);
+    }
+  }, [showRecentSearches, issueType]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -120,6 +193,45 @@ export default function Issues() {
     localStorage.removeItem("userFullName"); // Remove full name to prevent stale data
     localStorage.removeItem("authToken");
     setLocation("/thank-you");
+  };
+
+  const handleSelectRecentSearch = async (search: RecentSearch) => {
+    // Close the modal
+    setShowRecentSearches(false);
+    
+    // Set the issue type
+    setIssueType(search.type);
+    
+    // Reset all fields first
+    setIssueId('');
+    setMantisId('');
+    setProblemStatement('');
+    setError('');
+    setIssueDetails(null);
+    resetAllFutureActions();
+    
+    // Set the appropriate field based on type and trigger fetch
+    if (search.type === 'redmine') {
+      setIssueId(search.value);
+      // Trigger fetch after a short delay to ensure state is updated
+      setTimeout(() => {
+        const btn = document.querySelector('[data-testid="button-fetch-redmine-issue"]') as HTMLButtonElement;
+        if (btn) btn.click();
+      }, 100);
+    } else if (search.type === 'mantis') {
+      setMantisId(search.value);
+      setTimeout(() => {
+        const btn = document.querySelector('[data-testid="button-fetch-mantis-issue"]') as HTMLButtonElement;
+        if (btn) btn.click();
+      }, 100);
+    } else if (search.type === 'problem') {
+      setProblemStatement(search.value);
+      // For problem statements, automatically fetch similar issues
+      setTimeout(() => {
+        const btn = document.querySelector('[data-testid="button-fetch-similar-from-problem"]') as HTMLButtonElement;
+        if (btn) btn.click();
+      }, 100);
+    }
   };
 
   const resetAllFutureActions = () => {
@@ -228,6 +340,8 @@ export default function Issues() {
         
         if (transformedIssue) {
           setIssueDetails(transformedIssue);
+          // Save to recent searches
+          saveRecentSearch(issueType, currentId);
         } else {
           setError("Invalid response format received.");
         }
@@ -537,6 +651,11 @@ export default function Issues() {
             const sortedIssues = transformedIssues.sort((a, b) => b.similarity_percentage - a.similarity_percentage);
             setSimilarIssues(sortedIssues);
             
+            // Save to recent searches
+            if (issueType === 'problem') {
+              saveRecentSearch('problem', problemStatement.trim());
+            }
+            
             // Enhanced AI analysis extraction with multiple fallback paths
             let analysis = '';
             if (data.reply?.response) {
@@ -559,7 +678,7 @@ export default function Issues() {
             setShowNoMatches(false);
             // Fetch temp fix data with API response and set active tab to AI Analysis if available, otherwise similar issues
             fetchTempFixData(data);
-            setActiveTab(aiAnalysis ? 'ai-analysis' : 'similar-issues');
+            setActiveTab(analysis ? 'ai-analysis' : 'similar-issues');
             
             // Show success animation
             setShowSuccessAnimation(true);
@@ -892,6 +1011,46 @@ export default function Issues() {
             <p className="text-lg text-gray-600">Welcome back, {displayName}! 🎉</p>
           </div>
           <div className="flex items-center gap-3">
+            {/* Animated Recent Searches Link */}
+            <motion.div
+              initial={{ x: -100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ 
+                type: "spring", 
+                stiffness: 100, 
+                damping: 15,
+                delay: 0.3
+              }}
+            >
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setShowRecentSearches(true)}
+                    variant="outline"
+                    size="sm"
+                    data-testid="button-recent-searches"
+                    className="flex items-center gap-2 hover:bg-indigo-50 border-indigo-200 relative overflow-hidden group"
+                  >
+                    <motion.div
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ 
+                        repeat: Infinity, 
+                        duration: 2,
+                        ease: "easeInOut"
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <Clock className="w-4 h-4 text-indigo-600" />
+                      <span className="text-indigo-600 font-medium">Recent Searches</span>
+                    </motion.div>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View your recent search history</p>
+                </TooltipContent>
+              </Tooltip>
+            </motion.div>
+            
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -1624,15 +1783,23 @@ export default function Issues() {
                                 .trim();
                             };
 
+                            // Helper to check if data exists and is not empty
+                            const hasData = (data: any): boolean => {
+                              if (!data) return false;
+                              if (Array.isArray(data)) return data.length > 0;
+                              if (typeof data === 'string') return data.trim().length > 0;
+                              return true;
+                            };
+
                             return (
-                              <div className="space-y-8">
+                              <div className="space-y-6">
                                 {/* Probable Causes Section */}
-                                {parsed.probable_causes && (
-                                  <div className="mb-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg border border-red-200">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Probable Causes</h3>
-                                    {Array.isArray(parsed.probable_causes) ? (
+                                <div className="p-4 bg-gradient-to-r from-red-50 to-pink-50 rounded-lg border border-red-200">
+                                  <h3 className="text-lg font-bold text-gray-900 mb-4">Probable Causes</h3>
+                                  {hasData(parsed.probable_causes) ? (
+                                    Array.isArray(parsed.probable_causes) ? (
                                       parsed.probable_causes.map((cause: any, index: number) => (
-                                        <div key={index} className="mb-4">
+                                        <div key={index} className="mb-4 last:mb-0">
                                           <p className="text-gray-800 leading-relaxed mb-2">
                                             {typeof cause === 'string' ? cleanText(cause) : cleanText(cause.cause || cause.description || '')}
                                           </p>
@@ -1649,14 +1816,16 @@ export default function Issues() {
                                       ))
                                     ) : (
                                       <p className="text-gray-800 leading-relaxed">{cleanText(parsed.probable_causes)}</p>
-                                    )}
-                                  </div>
-                                )}
+                                    )
+                                  ) : (
+                                    <p className="text-gray-500 italic">No data available for this section.</p>
+                                  )}
+                                </div>
 
                                 {/* Step by Step Fix Section */}
-                                {parsed.step_by_step_fix && (
-                                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Step by Step Fix</h3>
+                                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                                  <h3 className="text-lg font-bold text-gray-900 mb-4">Step by Step Fix</h3>
+                                  {hasData(parsed.step_by_step_fix) ? (
                                     <ul className="ml-6 space-y-2">
                                       {Array.isArray(parsed.step_by_step_fix) ? (
                                         parsed.step_by_step_fix.map((step: any, index: number) => (
@@ -1668,13 +1837,15 @@ export default function Issues() {
                                         <li className="text-gray-800 leading-relaxed list-disc">{cleanText(parsed.step_by_step_fix)}</li>
                                       )}
                                     </ul>
-                                  </div>
-                                )}
+                                  ) : (
+                                    <p className="text-gray-500 italic">No data available for this section.</p>
+                                  )}
+                                </div>
 
                                 {/* Follow-up Checks Section */}
-                                {parsed.follow_up_checks && (
-                                  <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Follow-up Checks</h3>
+                                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                                  <h3 className="text-lg font-bold text-gray-900 mb-4">Follow-up Checks</h3>
+                                  {hasData(parsed.follow_up_checks) ? (
                                     <ul className="ml-6 space-y-2">
                                       {Array.isArray(parsed.follow_up_checks) ? (
                                         parsed.follow_up_checks.map((check: any, index: number) => (
@@ -1686,18 +1857,22 @@ export default function Issues() {
                                         <li className="text-gray-800 leading-relaxed list-disc">{cleanText(parsed.follow_up_checks)}</li>
                                       )}
                                     </ul>
-                                  </div>
-                                )}
+                                  ) : (
+                                    <p className="text-gray-500 italic">No data available for this section.</p>
+                                  )}
+                                </div>
 
                                 {/* Temporary Workaround Section */}
-                                {parsed.temporary_workaround && (
-                                  <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
-                                    <h3 className="text-lg font-bold text-gray-900 mb-4">Temporary Workaround</h3>
+                                <div className="p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+                                  <h3 className="text-lg font-bold text-gray-900 mb-4">Temporary Workaround</h3>
+                                  {hasData(parsed.temporary_workaround) ? (
                                     <p className="text-gray-800 leading-relaxed">
                                       {cleanText(parsed.temporary_workaround)}
                                     </p>
-                                  </div>
-                                )}
+                                  ) : (
+                                    <p className="text-gray-500 italic">No data available for this section.</p>
+                                  )}
+                                </div>
                               </div>
                             );
                           } catch (e) {
@@ -2186,6 +2361,175 @@ export default function Issues() {
             </div>
           </div>
         )}
+
+        {/* Recent Searches Modal */}
+        <AnimatePresence>
+          {showRecentSearches && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-end bg-black bg-opacity-50 p-4"
+              data-testid="modal-recent-searches"
+              onClick={() => setShowRecentSearches(false)}
+            >
+              <motion.div
+                initial={{ x: 400, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 400, opacity: 0 }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                className="bg-white rounded-l-2xl shadow-2xl w-full max-w-md h-full overflow-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6 h-full flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                      <Clock className="w-6 h-6 text-indigo-600" />
+                      Recent Searches
+                    </h2>
+                    <Button
+                      onClick={() => setShowRecentSearches(false)}
+                      variant="ghost"
+                      size="sm"
+                      data-testid="button-close-recent-searches"
+                      className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg p-2"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+                  
+                  {/* Filter Options */}
+                  <div className="mb-6">
+                    <Label className="block text-sm font-medium text-gray-700 mb-3">
+                      Filter by Type
+                    </Label>
+                    <RadioGroup
+                      value={recentSearchFilter}
+                      onValueChange={(value: 'all' | 'redmine' | 'mantis' | 'problem') => setRecentSearchFilter(value)}
+                      className="flex flex-wrap gap-3"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="all" id="filter-all" data-testid="radio-filter-all" />
+                        <Label htmlFor="filter-all" className="cursor-pointer text-sm">All</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="redmine" id="filter-redmine" data-testid="radio-filter-redmine" />
+                        <Label htmlFor="filter-redmine" className="cursor-pointer text-sm">Redmine</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="mantis" id="filter-mantis" data-testid="radio-filter-mantis" />
+                        <Label htmlFor="filter-mantis" className="cursor-pointer text-sm">Mantis</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="problem" id="filter-problem" data-testid="radio-filter-problem" />
+                        <Label htmlFor="filter-problem" className="cursor-pointer text-sm">Problem</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Recent Searches List */}
+                  <div className="flex-1 overflow-auto">
+                    {(() => {
+                      const filteredSearches = recentSearchFilter === 'all'
+                        ? recentSearches
+                        : recentSearches.filter(search => search.type === recentSearchFilter);
+
+                      if (filteredSearches.length === 0) {
+                        return (
+                          <div className="text-center py-12">
+                            <Clock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-500 text-lg mb-2">No recent searches</p>
+                            <p className="text-gray-400 text-sm">
+                              {recentSearchFilter === 'all' 
+                                ? 'Your search history will appear here'
+                                : `No ${recentSearchFilter} searches found`}
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-3">
+                          {filteredSearches.map((search) => (
+                            <motion.div
+                              key={search.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                                search.type === 'redmine'
+                                  ? 'border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300'
+                                  : search.type === 'mantis'
+                                  ? 'border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300'
+                                  : 'border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-300'
+                              }`}
+                              onClick={() => handleSelectRecentSearch(search)}
+                              data-testid={`recent-search-${search.id}`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <Badge
+                                      className={`text-xs ${
+                                        search.type === 'redmine'
+                                          ? 'bg-red-100 text-red-800'
+                                          : search.type === 'mantis'
+                                          ? 'bg-blue-100 text-blue-800'
+                                          : 'bg-purple-100 text-purple-800'
+                                      }`}
+                                    >
+                                      {search.type.toUpperCase()}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-gray-900 font-medium truncate mb-1">
+                                    {search.type === 'problem'
+                                      ? search.value.substring(0, 50) + (search.value.length > 50 ? '...' : '')
+                                      : `ID: ${search.value}`}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {new Date(search.timestamp).toLocaleDateString('en-GB', {
+                                      day: '2-digit',
+                                      month: 'short',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    })}
+                                  </p>
+                                </div>
+                                <ArrowLeft className="w-5 h-5 text-gray-400 transform rotate-180 flex-shrink-0" />
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Clear All Button */}
+                  {recentSearches.length > 0 && (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <Button
+                        onClick={() => {
+                          if (confirm('Are you sure you want to clear all recent searches?')) {
+                            clearRecentSearches();
+                            setRecentSearches([]);
+                          }
+                        }}
+                        variant="outline"
+                        className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                        data-testid="button-clear-recent-searches"
+                      >
+                        Clear All History
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
     </div>
