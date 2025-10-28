@@ -1031,18 +1031,19 @@ export default function Issues() {
                     data-testid="button-recent-searches"
                     className="flex items-center gap-2 hover:bg-indigo-50 border-indigo-200 relative overflow-hidden group"
                   >
-                    <motion.div
-                      animate={{ x: [0, 5, 0] }}
-                      transition={{ 
-                        repeat: Infinity, 
-                        duration: 2,
-                        ease: "easeInOut"
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <Clock className="w-4 h-4 text-indigo-600" />
+                    <div className="flex items-center gap-2">
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ 
+                          repeat: Infinity, 
+                          duration: 20,
+                          ease: "linear"
+                        }}
+                      >
+                        <History className="w-4 h-4 text-indigo-600" />
+                      </motion.div>
                       <span className="text-indigo-600 font-medium">Recent Searches</span>
-                    </motion.div>
+                    </div>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -2384,7 +2385,26 @@ export default function Issues() {
                 <div className="p-6 h-full flex flex-col">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                      <Clock className="w-6 h-6 text-indigo-600" />
+                      <motion.div
+                        animate={{ 
+                          rotate: [0, 360],
+                          scale: [1, 1.1, 1]
+                        }}
+                        transition={{ 
+                          rotate: {
+                            repeat: Infinity,
+                            duration: 20,
+                            ease: "linear"
+                          },
+                          scale: {
+                            repeat: Infinity,
+                            duration: 2,
+                            ease: "easeInOut"
+                          }
+                        }}
+                      >
+                        <History className="w-6 h-6 text-indigo-600" />
+                      </motion.div>
                       Recent Searches
                     </h2>
                     <Button
@@ -2455,14 +2475,13 @@ export default function Issues() {
                               key={search.id}
                               initial={{ opacity: 0, y: 10 }}
                               animate={{ opacity: 1, y: 0 }}
-                              whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                               className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
                                 search.type === 'redmine'
-                                  ? 'border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300'
+                                  ? 'border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300 hover:shadow-md'
                                   : search.type === 'mantis'
-                                  ? 'border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300'
-                                  : 'border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-300'
+                                  ? 'border-blue-200 bg-blue-50 hover:bg-blue-100 hover:border-blue-300 hover:shadow-md'
+                                  : 'border-purple-200 bg-purple-50 hover:bg-purple-100 hover:border-purple-300 hover:shadow-md'
                               }`}
                               onClick={() => handleSelectRecentSearch(search)}
                               data-testid={`recent-search-${search.id}`}
